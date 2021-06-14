@@ -41,27 +41,27 @@ public interface SftpFileSystemService {
 // required property
 @Bean
 public SftpFileSystemService sftpService(){
-        SftpProperties properties = new SftpProperties();
-        properties.setHost("127.0.0.1");
-        properties.setUsername("username");
-        properties.setPassword("password");
-        properties.setRoot("/home");
-        return new DefaultSftpFileSystemService(properties);
-        }
+    SftpProperties properties = new SftpProperties();
+    properties.setHost("127.0.0.1");
+    properties.setUsername("username");
+    properties.setPassword("password");
+    properties.setRoot("/home");
+    return new DefaultSftpFileSystemService(properties);
+}
 
 // for example:
 // use private key, pass phrase
 // required property
 @Bean
 public SftpFileSystemService sftpService(){
-        SftpProperties properties = new SftpProperties();
-        properties.setKeyMode(true);
-        properties.setHost("127.0.0.1");
-        properties.setPrivateKey("key");
-        properties.setPassphrase("passphrase");
-        properties.setRoot("/home");
-        return new DefaultSftpFileSystemService(properties);
-        }
+    SftpProperties properties = new SftpProperties();
+    properties.setKeyMode(true);
+    properties.setHost("127.0.0.1");
+    properties.setPrivateKey("key");
+    properties.setPassphrase("passphrase");
+    properties.setRoot("/home");
+    return new DefaultSftpFileSystemService(properties);
+}
 ```
 
 ### 🙄 Properties
