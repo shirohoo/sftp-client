@@ -52,38 +52,63 @@ class DefaultSftpFileSystemServiceTest {
     
     @AfterEach
     void tearDown() {
+        //given
         File file = new File(PATH);
-        file.delete();
+        
+        //when
+        boolean delete = file.delete();
+        
+        //then
+        assertThat(delete).isTrue();
     }
     
     @Test
     void 파일을_다운로드한다() throws Exception {
+        //given
         File upload = new File(PATH);
         fileSystemService.upload(CREATE_FILE, upload);
-        
+    
+        //when
         File file = fileSystemService.download(CREATE_FILE, DIR + DOWNLOAD_FILE);
+    
+        //then
         assertThat(file).isNotNull().exists().isFile();
         assertThat(file.getName()).isEqualTo(DOWNLOAD_FILE);
     }
     
     @Test
     void 파일을_업로드한다_인수는_파일() throws Exception {
+        //given
         File file = new File(PATH);
+    
+        //when
         boolean upload = fileSystemService.upload(CREATE_FILE, file);
+    
+        //then
         assertThat(upload).isTrue();
     }
     
     @Test
     void 파일을_업로드한다_인수는_인풋스트림() throws Exception {
+        //given
         File file = new File(PATH);
+    
+        //when
         boolean upload = fileSystemService.upload(CREATE_FILE, new FileInputStream(file));
+    
+        //then
         assertThat(upload).isTrue();
     }
     
     @Test
     void 파일을_제거한다() throws Exception {
+        //given
         String fileName = CREATE_FILE;
+    
+        //when
         boolean delete = fileSystemService.delete(fileName);
+    
+        //then
         assertThat(delete).isTrue();
     }
 }

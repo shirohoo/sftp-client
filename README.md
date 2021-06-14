@@ -13,7 +13,12 @@ public interface SftpFileSystemService {
 
 ---
 
-##😝 Install
+## 🚗 Download
+- [1.0](https://github.com/shirohoo/sftp-client/releases/tag/1.0)
+
+---
+
+## 😝 Install
 
 1. Create `rootProject/libs`
 2. Add `sftp-client.jar`
@@ -28,7 +33,7 @@ public interface SftpFileSystemService {
 
 ## How to use?
 
-### 🤗 Set `SftpProperties` and 
+### 🤗 Set `SftpProperties` and Create `@Bean`
 
 ```java
 // for example:
@@ -36,27 +41,27 @@ public interface SftpFileSystemService {
 // required property
 @Bean
 public SftpFileSystemService sftpService(){
-    SftpProperties properties = new SftpProperties();
-    properties.setHost("127.0.0.1");
-    properties.setUsername("username");
-    properties.setPassword("password");
-    properties.setRoot("/home");
-    return new DefaultSftpFileSystemService(properties);
-}
+        SftpProperties properties = new SftpProperties();
+        properties.setHost("127.0.0.1");
+        properties.setUsername("username");
+        properties.setPassword("password");
+        properties.setRoot("/home");
+        return new DefaultSftpFileSystemService(properties);
+        }
 
 // for example:
 // use private key, pass phrase
 // required property
 @Bean
 public SftpFileSystemService sftpService(){
-    SftpProperties properties = new SftpProperties();
-    properties.setKeyMode(true);
-    properties.setHost("127.0.0.1");
-    properties.setPrivateKey("key");
-    properties.setPassphrase("passphrase");
-    properties.setRoot("/home");
-    return new DefaultSftpFileSystemService(properties);
-}
+        SftpProperties properties = new SftpProperties();
+        properties.setKeyMode(true);
+        properties.setHost("127.0.0.1");
+        properties.setPrivateKey("key");
+        properties.setPassphrase("passphrase");
+        properties.setRoot("/home");
+        return new DefaultSftpFileSystemService(properties);
+        }
 ```
 
 ### 🙄 Properties
@@ -68,10 +73,13 @@ public class SftpProperties {
     private String sessionStrictHostKeyChecking = "no";
     private Integer sessionConnectTimeout = 15000;
     private Integer channelConnectedTimeout = 15000;
-    private String host = null;
-    private String username = null;
-    private String password = null;
-    private String root = null;
+    
+    //--- required property ---//
+    //↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+    private String host;
+    private String username;
+    private String password;
+    private String root;
 }
 ```
 
@@ -94,7 +102,7 @@ class SftpFileSystemServiceImplTest {
     @BeforeEach
     void setUp() throws Exception {
         SftpProperties properties = new SftpProperties();
-    
+        
         //----------------------- VARIABLE  -----------------------//
         properties.setHost("127.0.0.1");
         properties.setUsername("username");
@@ -118,38 +126,63 @@ class SftpFileSystemServiceImplTest {
     
     @AfterEach
     void tearDown() {
+        //given
         File file = new File(PATH);
-        file.delete();
+    
+        //when
+        boolean delete = file.delete();
+    
+        //then
+        assertThat(delete).isTrue();
     }
     
     @Test
     void 파일을_다운로드한다() throws Exception {
+        //given
         File upload = new File(PATH);
         fileSystemService.upload(CREATE_FILE, upload);
         
+        //when
         File file = fileSystemService.download(CREATE_FILE, DIR + DOWNLOAD_FILE);
+        
+        //then
         assertThat(file).isNotNull().exists().isFile();
         assertThat(file.getName()).isEqualTo(DOWNLOAD_FILE);
     }
     
     @Test
     void 파일을_업로드한다_인수는_파일() throws Exception {
+        //given
         File file = new File(PATH);
+        
+        //when
         boolean upload = fileSystemService.upload(CREATE_FILE, file);
+        
+        //then
         assertThat(upload).isTrue();
     }
     
     @Test
     void 파일을_업로드한다_인수는_인풋스트림() throws Exception {
+        //given
         File file = new File(PATH);
+    
+        //when
         boolean upload = fileSystemService.upload(CREATE_FILE, new FileInputStream(file));
+    
+        //then
         assertThat(upload).isTrue();
     }
     
     @Test
     void 파일을_제거한다() throws Exception {
+        //given
         String fileName = CREATE_FILE;
+        
+        //when
         boolean delete = fileSystemService.delete(fileName);
+        
+        //then
         assertThat(delete).isTrue();
     }
 }
