@@ -1,13 +1,16 @@
 # 😎 SFTP-Module
 
+- Need Java8+
+
 ## 🏁 API
 
 ```java
-public interface SftpFileSystemService {
-    File download(String targetPath, String downloadPath) throws Exception;
-    boolean upload(String targetPath, InputStream inputStream) throws Exception;
+public interface SftpFileService {
+    File read(String targetPath) throws Exception;
     boolean upload(String targetPath, File file) throws Exception;
-    boolean delete(String fileName) throws Exception;
+    boolean upload(String targetPath, InputStream inputStream) throws Exception;
+    boolean remove(String targetPath) throws Exception;
+    boolean download(String targetPath, Path downloadPath) throws Exception;
 }
 ```
 
@@ -15,6 +18,7 @@ public interface SftpFileSystemService {
 
 ## 🚗 Download
 - [1.0](https://github.com/shirohoo/sftp-client/releases/tag/1.0)
+- [1.1](https://github.com/shirohoo/sftp-client/releases/tag/1.1)
 
 ---
 
@@ -27,7 +31,13 @@ public interface SftpFileSystemService {
 
 3. Set `build.gradle`
 
-![2](https://user-images.githubusercontent.com/71188307/121863162-864c2f80-cd36-11eb-9906-0f63f7e0c928.JPG)
+```groovy
+dependencies {
+    implementation files('libs/sftp-client-{version}.jar')
+    // for example:
+    // implementation files('libs/sftp-client-1.1.jar') 
+}
+```
 
 ---
 
@@ -39,34 +49,58 @@ public interface SftpFileSystemService {
 // for example:
 // use username, password     
 // required property
+
+import java.nio.file.Paths;
+
 @Bean
-public SftpFileSystemService sftpService(){
-        SftpProperties properties = new SftpProperties();
+public SftpFileService sftpService(){
+        SftpProperties properties=new SftpProperties();
         properties.setHost("127.0.0.1");
         properties.setUsername("username");
         properties.setPassword("password");
         properties.setRoot("/home");
-        return new DefaultSftpFileSystemService(properties);
+        return new DefaultSftpFileService(properties);
         }
 
 // for example:
 // use private key, pass phrase
 // required property
 @Bean
-public SftpFileSystemService sftpService(){
-        SftpProperties properties = new SftpProperties();
+public SftpFileService sftpService(){
+        SftpProperties properties=new SftpProperties();
         properties.setKeyMode(true);
         properties.setHost("127.0.0.1");
         properties.setPrivateKey("key");
         properties.setPassphrase("passphrase");
         properties.setRoot("/home");
-        return new DefaultSftpFileSystemService(properties);
+        return new DefaultSftpFileService(properties);
         }
+
+// usage
+public class FileService {
+    private SftpFileService sftpFileService;
+    
+    // Constructor DI
+    public FileService(SftpFileService sftpFileService) {
+        this.sftpFileService = sftpFileService;
+    }
+    
+    public void example() throws Exception {
+        // API
+        File read = sftpFileService.read("targetPath");
+        boolean upload_1 = sftpFileService.upload("targetPath", new File("uploadFile"));
+        boolean upload_2 = sftpFileService.upload("targetPath", new FileInputStream(new File("uploadFile")));
+        boolean remove = sftpFileService.remove("targetPath");
+        boolean download = sftpFileService.download("targetPath", Paths.get("downloadPath"));
+    }
+}
 ```
 
 ### 🙄 Properties
 ```java
 public class SftpProperties {
+    //--- default property ---//
+    //↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
     private Boolean keyMode = false;
     private String protocol = "sftp";
     private Integer port = 22;
@@ -84,106 +118,3 @@ public class SftpProperties {
 ```
 
 ---
-
-
-## 😋 Test Code
-
-```java
-@Disabled("민감정보제거_비활성화")
-@SpringBootTest(classes = {SftpProperties.class, SftpFileSystemServiceImpl.class})
-class SftpFileSystemServiceImplTest {
-    static final String DIR = (System.getProperty("user.home") + File.separator + "sftp-module-test") + File.separator;
-    static final String CREATE_FILE = "sftp-test-file.txt";
-    static final String DOWNLOAD_FILE = "download-file.txt";
-    static final String PATH = (DIR + CREATE_FILE).replaceAll("/", Matcher.quoteReplacement(File.separator));
-    
-    SftpFileSystemService fileSystemService;
-    
-    @BeforeEach
-    void setUp() throws Exception {
-        SftpProperties properties = new SftpProperties();
-        
-        //----------------------- VARIABLE  -----------------------//
-        properties.setHost("127.0.0.1");
-        properties.setUsername("username");
-        properties.setPassword("password");
-        properties.setRoot("/home");
-        //---------------------------------------------------------//
-        
-        fileSystemService = new SftpFileSystemServiceImpl(properties);
-        
-        File dir = new File(DIR);
-        String path = PATH;
-        File file = new File(path);
-        FileOutputStream stream = new FileOutputStream(file);
-        try(OutputStreamWriter writer = new OutputStreamWriter(stream)) {
-            if(!dir.exists()) {
-                dir.mkdirs();
-            }
-            writer.flush();
-        }
-    }
-    
-    @AfterEach
-    void tearDown() {
-        //given
-        File file = new File(PATH);
-    
-        //when
-        boolean delete = file.delete();
-    
-        //then
-        assertThat(delete).isTrue();
-    }
-    
-    @Test
-    void 파일을_다운로드한다() throws Exception {
-        //given
-        File upload = new File(PATH);
-        fileSystemService.upload(CREATE_FILE, upload);
-        
-        //when
-        File file = fileSystemService.download(CREATE_FILE, DIR + DOWNLOAD_FILE);
-        
-        //then
-        assertThat(file).isNotNull().exists().isFile();
-        assertThat(file.getName()).isEqualTo(DOWNLOAD_FILE);
-    }
-    
-    @Test
-    void 파일을_업로드한다_인수는_파일() throws Exception {
-        //given
-        File file = new File(PATH);
-        
-        //when
-        boolean upload = fileSystemService.upload(CREATE_FILE, file);
-        
-        //then
-        assertThat(upload).isTrue();
-    }
-    
-    @Test
-    void 파일을_업로드한다_인수는_인풋스트림() throws Exception {
-        //given
-        File file = new File(PATH);
-    
-        //when
-        boolean upload = fileSystemService.upload(CREATE_FILE, new FileInputStream(file));
-    
-        //then
-        assertThat(upload).isTrue();
-    }
-    
-    @Test
-    void 파일을_제거한다() throws Exception {
-        //given
-        String fileName = CREATE_FILE;
-        
-        //when
-        boolean delete = fileSystemService.delete(fileName);
-        
-        //then
-        assertThat(delete).isTrue();
-    }
-}
-```
