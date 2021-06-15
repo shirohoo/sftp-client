@@ -1,12 +1,15 @@
 # 😎 SFTP-Module
 
+- Need Java8+
+
 ## 🏁 API
 
 ```java
-public interface SftpFileSystemService {
+public interface SftpFileService {
+    File read(String targetPath) throws Exception;
     File download(String targetPath, String downloadPath) throws Exception;
-    boolean upload(String targetPath, InputStream inputStream) throws Exception;
     boolean upload(String targetPath, File file) throws Exception;
+    boolean upload(String targetPath, InputStream inputStream) throws Exception;
     boolean delete(String fileName) throws Exception;
 }
 ```
@@ -15,6 +18,7 @@ public interface SftpFileSystemService {
 
 ## 🚗 Download
 - [1.0](https://github.com/shirohoo/sftp-client/releases/tag/1.0)
+- [1.1](https://github.com/shirohoo/sftp-client/releases/tag/1.1)
 
 ---
 
@@ -27,7 +31,7 @@ public interface SftpFileSystemService {
 
 3. Set `build.gradle`
 
-![2](https://user-images.githubusercontent.com/71188307/121863162-864c2f80-cd36-11eb-9906-0f63f7e0c928.JPG)
+![2](https://user-images.githubusercontent.com/78329064/121989977-fe1e6680-cdd7-11eb-9244-9858996191a5.png)
 
 ---
 
@@ -84,106 +88,3 @@ public class SftpProperties {
 ```
 
 ---
-
-
-## 😋 Test Code
-
-```java
-@Disabled("민감정보제거_비활성화")
-@SpringBootTest(classes = {SftpProperties.class, SftpFileSystemServiceImpl.class})
-class SftpFileSystemServiceImplTest {
-    static final String DIR = (System.getProperty("user.home") + File.separator + "sftp-module-test") + File.separator;
-    static final String CREATE_FILE = "sftp-test-file.txt";
-    static final String DOWNLOAD_FILE = "download-file.txt";
-    static final String PATH = (DIR + CREATE_FILE).replaceAll("/", Matcher.quoteReplacement(File.separator));
-    
-    SftpFileSystemService fileSystemService;
-    
-    @BeforeEach
-    void setUp() throws Exception {
-        SftpProperties properties = new SftpProperties();
-        
-        //----------------------- VARIABLE  -----------------------//
-        properties.setHost("127.0.0.1");
-        properties.setUsername("username");
-        properties.setPassword("password");
-        properties.setRoot("/home");
-        //---------------------------------------------------------//
-        
-        fileSystemService = new SftpFileSystemServiceImpl(properties);
-        
-        File dir = new File(DIR);
-        String path = PATH;
-        File file = new File(path);
-        FileOutputStream stream = new FileOutputStream(file);
-        try(OutputStreamWriter writer = new OutputStreamWriter(stream)) {
-            if(!dir.exists()) {
-                dir.mkdirs();
-            }
-            writer.flush();
-        }
-    }
-    
-    @AfterEach
-    void tearDown() {
-        //given
-        File file = new File(PATH);
-    
-        //when
-        boolean delete = file.delete();
-    
-        //then
-        assertThat(delete).isTrue();
-    }
-    
-    @Test
-    void 파일을_다운로드한다() throws Exception {
-        //given
-        File upload = new File(PATH);
-        fileSystemService.upload(CREATE_FILE, upload);
-        
-        //when
-        File file = fileSystemService.download(CREATE_FILE, DIR + DOWNLOAD_FILE);
-        
-        //then
-        assertThat(file).isNotNull().exists().isFile();
-        assertThat(file.getName()).isEqualTo(DOWNLOAD_FILE);
-    }
-    
-    @Test
-    void 파일을_업로드한다_인수는_파일() throws Exception {
-        //given
-        File file = new File(PATH);
-        
-        //when
-        boolean upload = fileSystemService.upload(CREATE_FILE, file);
-        
-        //then
-        assertThat(upload).isTrue();
-    }
-    
-    @Test
-    void 파일을_업로드한다_인수는_인풋스트림() throws Exception {
-        //given
-        File file = new File(PATH);
-    
-        //when
-        boolean upload = fileSystemService.upload(CREATE_FILE, new FileInputStream(file));
-    
-        //then
-        assertThat(upload).isTrue();
-    }
-    
-    @Test
-    void 파일을_제거한다() throws Exception {
-        //given
-        String fileName = CREATE_FILE;
-        
-        //when
-        boolean delete = fileSystemService.delete(fileName);
-        
-        //then
-        assertThat(delete).isTrue();
-    }
-}
-```

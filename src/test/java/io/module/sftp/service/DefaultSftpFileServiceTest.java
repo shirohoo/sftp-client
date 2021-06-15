@@ -16,28 +16,28 @@ import java.util.regex.Matcher;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Disabled("SftpProperties_미설정상태이므로_비활성화")
-@SpringBootTest(classes = {SftpProperties.class, DefaultSftpFileSystemService.class})
-class DefaultSftpFileSystemServiceTest {
+@SpringBootTest(classes = {SftpProperties.class, DefaultSftpFileService.class})
+class DefaultSftpFileServiceTest {
     static final String DIR = (System.getProperty("user.home") + File.separator + "sftp-module-test") + File.separator;
     static final String CREATE_FILE = "sftp-test-file.txt";
     static final String DOWNLOAD_FILE = "download-file.txt";
     static final String PATH = (DIR + CREATE_FILE).replaceAll("/", Matcher.quoteReplacement(File.separator));
     
-    SftpFileSystemService fileSystemService;
+    SftpFileService sftpService;
     
     @BeforeEach
     void setUp() throws Exception {
         SftpProperties properties = new SftpProperties();
-        
+    
         //----------------------- VARIABLE  -----------------------//
         properties.setHost("127.0.0.1");
         properties.setUsername("username");
         properties.setPassword("password");
         properties.setRoot("/home");
         //---------------------------------------------------------//
-        
-        fileSystemService = new DefaultSftpFileSystemService(properties);
-        
+    
+        sftpService = new DefaultSftpFileService(properties);
+    
         File dir = new File(DIR);
         String path = PATH;
         File file = new File(path);
@@ -54,23 +54,36 @@ class DefaultSftpFileSystemServiceTest {
     void tearDown() {
         //given
         File file = new File(PATH);
-        
+    
         //when
         boolean delete = file.delete();
-        
+    
         //then
         assertThat(delete).isTrue();
+    }
+    
+    @Test
+    void 파일을_읽는다() throws Exception {
+        //given
+        File upload = new File(PATH);
+        sftpService.upload(CREATE_FILE, upload);
+        
+        //when
+        File read = sftpService.read(CREATE_FILE);
+        
+        //then
+        assertThat(read).isNotNull().isFile().canRead().canRead();
     }
     
     @Test
     void 파일을_다운로드한다() throws Exception {
         //given
         File upload = new File(PATH);
-        fileSystemService.upload(CREATE_FILE, upload);
-    
+        sftpService.upload(CREATE_FILE, upload);
+        
         //when
-        File file = fileSystemService.download(CREATE_FILE, DIR + DOWNLOAD_FILE);
-    
+        File file = sftpService.download(CREATE_FILE, DIR + DOWNLOAD_FILE);
+        
         //then
         assertThat(file).isNotNull().exists().isFile();
         assertThat(file.getName()).isEqualTo(DOWNLOAD_FILE);
@@ -82,7 +95,7 @@ class DefaultSftpFileSystemServiceTest {
         File file = new File(PATH);
     
         //when
-        boolean upload = fileSystemService.upload(CREATE_FILE, file);
+        boolean upload = sftpService.upload(CREATE_FILE, file);
     
         //then
         assertThat(upload).isTrue();
@@ -94,7 +107,7 @@ class DefaultSftpFileSystemServiceTest {
         File file = new File(PATH);
     
         //when
-        boolean upload = fileSystemService.upload(CREATE_FILE, new FileInputStream(file));
+        boolean upload = sftpService.upload(CREATE_FILE, new FileInputStream(file));
     
         //then
         assertThat(upload).isTrue();
@@ -106,7 +119,7 @@ class DefaultSftpFileSystemServiceTest {
         String fileName = CREATE_FILE;
     
         //when
-        boolean delete = fileSystemService.delete(fileName);
+        boolean delete = sftpService.delete(fileName);
     
         //then
         assertThat(delete).isTrue();
