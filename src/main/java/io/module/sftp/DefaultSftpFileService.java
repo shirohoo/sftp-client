@@ -15,56 +15,12 @@ import static java.util.Arrays.stream;
 public class DefaultSftpFileService implements SftpFileService {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefaultSftpFileService.class);
     
-    private static final String SESSION_properties_STRICT_HOST_KEY_CHECKING = "StrictHostKeyChecking";
+    private static final String STRICT_HOST_KEY_CHECKING = "StrictHostKeyChecking";
     
     private final SftpProperties properties;
     
     public DefaultSftpFileService(SftpProperties properties) {
         this.properties = properties;
-    }
-    
-    private Session createSession(JSch jsch, String host, String username, Integer port) throws Exception {
-        Session session = null;
-        if(port <= 0) {
-            session = jsch.getSession(username, host);
-        }
-        else {
-            session = jsch.getSession(username, host, port);
-        }
-        if(session == null) {
-            throw new Exception(host + " session is null");
-        }
-        session.setConfig(SESSION_properties_STRICT_HOST_KEY_CHECKING, properties.getSessionStrictHostKeyChecking());
-        return session;
-    }
-    
-    private void disconnect(ChannelSftp sftp) {
-        try {
-            if(sftp != null) {
-                if(sftp.isConnected()) {
-                    sftp.disconnect();
-                }
-                else if(sftp.isClosed()) {
-                    log.info("Sftp is closed already");
-                }
-                if(null != sftp.getSession()) {
-                    sftp.getSession().disconnect();
-                }
-            }
-        }
-        catch(JSchException e) {
-            log.error(e.getMessage());
-        }
-    }
-    
-    private ChannelSftp getChannelSftp(Session session) throws JSchException {
-        session.connect(properties.getSessionConnectTimeout());
-        log.info("Session connected to {}", properties.getHost());
-        
-        Channel channel = session.openChannel(properties.getProtocol());
-        channel.connect(properties.getChannelConnectedTimeout());
-        log.info("Channel created to {}", properties.getHost());
-        return (ChannelSftp) channel;
     }
     
     private ChannelSftp connectByPassword() throws Exception {
@@ -98,6 +54,50 @@ public class DefaultSftpFileService implements SftpFileService {
         
         Session session = createSession(jsch, properties.getHost(), properties.getUsername(), properties.getPort());
         return getChannelSftp(session);
+    }
+    
+    private Session createSession(JSch jsch, String host, String username, Integer port) throws Exception {
+        Session session = null;
+        if(port <= 0) {
+            session = jsch.getSession(username, host);
+        }
+        else {
+            session = jsch.getSession(username, host, port);
+        }
+        if(session == null) {
+            throw new Exception(host + " session is null");
+        }
+        session.setConfig(STRICT_HOST_KEY_CHECKING, properties.getSessionStrictHostKeyChecking());
+        return session;
+    }
+    
+    private void disconnect(ChannelSftp sftp) {
+        try {
+            if(sftp != null) {
+                if(sftp.isConnected()) {
+                    sftp.disconnect();
+                }
+                else if(sftp.isClosed()) {
+                    log.info("Sftp is closed already");
+                }
+                if(null != sftp.getSession()) {
+                    sftp.getSession().disconnect();
+                }
+            }
+        }
+        catch(JSchException e) {
+            log.error(e.getMessage());
+        }
+    }
+    
+    private ChannelSftp getChannelSftp(Session session) throws JSchException {
+        session.connect(properties.getSessionConnectTimeout());
+        log.info("Session connected to {}", properties.getHost());
+        
+        Channel channel = session.openChannel(properties.getProtocol());
+        channel.connect(properties.getChannelConnectedTimeout());
+        log.info("Channel created to {}", properties.getHost());
+        return (ChannelSftp) channel;
     }
     
     @Override
@@ -152,13 +152,13 @@ public class DefaultSftpFileService implements SftpFileService {
             log.info("Change path to {}", properties.getRoot());
             
             int index = targetPath.lastIndexOf("/");
-            String fileDir;
+            String dirName;
             String fileName;
             boolean dirs;
             if(index != -1) {
-                fileDir = targetPath.substring(0, index);
+                dirName = targetPath.substring(0, index);
                 fileName = targetPath.substring(index + 1);
-                dirs = this.createDirs(fileDir, sftp);
+                dirs = this.createUpstreamDirs(dirName, sftp);
                 if(!dirs) {
                     log.error("Remote path error. path:{}", targetPath);
                     throw new Exception("Upload File failure");
@@ -185,7 +185,7 @@ public class DefaultSftpFileService implements SftpFileService {
         }
     }
     
-    private boolean createDirs(String dirPath, ChannelSftp sftp) {
+    private boolean createUpstreamDirs(String dirPath, ChannelSftp sftp) {
         if(dirPath != null && !dirPath.isEmpty() && sftp != null) {
             String[] dirs = stream(dirPath.split("/"))
                     .filter(StringUtils::isNotBlank).toArray(String[]::new);
@@ -252,7 +252,7 @@ public class DefaultSftpFileService implements SftpFileService {
             log.error("Invalid download path: {}", path, e);
             throw new Exception("Invalid download path. please check '/' or '\\'");
         }
-        downloadFolderCheck(location);
+        createDownstreamDirs(location);
         
         ChannelSftp sftp = null;
         if(!properties.getKeyMode()) {
@@ -280,7 +280,7 @@ public class DefaultSftpFileService implements SftpFileService {
         }
     }
     
-    private void downloadFolderCheck(String location) {
+    private void createDownstreamDirs(String location) {
         File folder = new File(location);
         if(!folder.exists()) {
             try {
