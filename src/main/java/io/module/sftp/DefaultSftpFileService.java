@@ -15,12 +15,45 @@ import static java.util.Arrays.stream;
 public class DefaultSftpFileService implements SftpFileService {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefaultSftpFileService.class);
     
-    private static final String SESSION_properties_STRICT_HOST_KEY_CHECKING = "StrictHostKeyChecking";
+    private static final String STRICT_HOST_KEY_CHECKING = "StrictHostKeyChecking";
     
     private final SftpProperties properties;
     
     public DefaultSftpFileService(SftpProperties properties) {
         this.properties = properties;
+    }
+    
+    private ChannelSftp connectByPassword() throws Exception {
+        JSch jsch = new JSch();
+        log.info("Try to connect sftp[{}@{}], use password[{}]",
+                 properties.getUsername(),
+                 properties.getHost(),
+                 properties.getPassword());
+        
+        Session session = createSession(jsch, properties.getHost(), properties.getUsername(), properties.getPort());
+        session.setPassword(properties.getPassword());
+        return getChannelSftpConnection(session);
+    }
+    
+    private ChannelSftp connectByPrivateKey() throws Exception {
+        JSch jsch = new JSch();
+        
+        if(StringUtils.isNotBlank(properties.getPrivateKey())) {
+            if(StringUtils.isNotBlank(properties.getPassphrase())) {
+                jsch.addIdentity(properties.getPrivateKey(), properties.getPassphrase());
+            }
+            else {
+                jsch.addIdentity(properties.getPrivateKey());
+            }
+        }
+        log.info("Try to connect sftp[{}@{}], use private key[{}] with passphrase[{}]",
+                 properties.getUsername(),
+                 properties.getHost(),
+                 properties.getPrivateKey(),
+                 properties.getPassphrase());
+        
+        Session session = createSession(jsch, properties.getHost(), properties.getUsername(), properties.getPort());
+        return getChannelSftpConnection(session);
     }
     
     private Session createSession(JSch jsch, String host, String username, Integer port) throws Exception {
@@ -34,7 +67,7 @@ public class DefaultSftpFileService implements SftpFileService {
         if(session == null) {
             throw new Exception(host + " session is null");
         }
-        session.setConfig(SESSION_properties_STRICT_HOST_KEY_CHECKING, properties.getSessionStrictHostKeyChecking());
+        session.setConfig(STRICT_HOST_KEY_CHECKING, properties.getSessionStrictHostKeyChecking());
         return session;
     }
     
@@ -57,7 +90,7 @@ public class DefaultSftpFileService implements SftpFileService {
         }
     }
     
-    private ChannelSftp getChannelSftp(Session session) throws JSchException {
+    private ChannelSftp getChannelSftpConnection(Session session) throws JSchException {
         session.connect(properties.getSessionConnectTimeout());
         log.info("Session connected to {}", properties.getHost());
         
@@ -65,39 +98,6 @@ public class DefaultSftpFileService implements SftpFileService {
         channel.connect(properties.getChannelConnectedTimeout());
         log.info("Channel created to {}", properties.getHost());
         return (ChannelSftp) channel;
-    }
-    
-    private ChannelSftp connectByPassword() throws Exception {
-        JSch jsch = new JSch();
-        log.info("Try to connect sftp[{}@{}], use password[{}]",
-                 properties.getUsername(),
-                 properties.getHost(),
-                 properties.getPassword());
-        
-        Session session = createSession(jsch, properties.getHost(), properties.getUsername(), properties.getPort());
-        session.setPassword(properties.getPassword());
-        return getChannelSftp(session);
-    }
-    
-    private ChannelSftp connectByPrivateKey() throws Exception {
-        JSch jsch = new JSch();
-        
-        if(StringUtils.isNotBlank(properties.getPrivateKey())) {
-            if(StringUtils.isNotBlank(properties.getPassphrase())) {
-                jsch.addIdentity(properties.getPrivateKey(), properties.getPassphrase());
-            }
-            else {
-                jsch.addIdentity(properties.getPrivateKey());
-            }
-        }
-        log.info("Try to connect sftp[{}@{}], use private key[{}] with passphrase[{}]",
-                 properties.getUsername(),
-                 properties.getHost(),
-                 properties.getPrivateKey(),
-                 properties.getPassphrase());
-        
-        Session session = createSession(jsch, properties.getHost(), properties.getUsername(), properties.getPort());
-        return getChannelSftp(session);
     }
     
     @Override
@@ -152,13 +152,13 @@ public class DefaultSftpFileService implements SftpFileService {
             log.info("Change path to {}", properties.getRoot());
             
             int index = targetPath.lastIndexOf("/");
-            String fileDir;
+            String dirName;
             String fileName;
             boolean dirs;
             if(index != -1) {
-                fileDir = targetPath.substring(0, index);
+                dirName = targetPath.substring(0, index);
                 fileName = targetPath.substring(index + 1);
-                dirs = this.createDirs(fileDir, sftp);
+                dirs = this.createUpstreamDirs(dirName, sftp);
                 if(!dirs) {
                     log.error("Remote path error. path:{}", targetPath);
                     throw new Exception("Upload File failure");
@@ -185,7 +185,7 @@ public class DefaultSftpFileService implements SftpFileService {
         }
     }
     
-    private boolean createDirs(String dirPath, ChannelSftp sftp) {
+    private boolean createUpstreamDirs(String dirPath, ChannelSftp sftp) {
         if(dirPath != null && !dirPath.isEmpty() && sftp != null) {
             String[] dirs = stream(dirPath.split("/"))
                     .filter(StringUtils::isNotBlank).toArray(String[]::new);
@@ -252,7 +252,7 @@ public class DefaultSftpFileService implements SftpFileService {
             log.error("Invalid download path: {}", path, e);
             throw new Exception("Invalid download path. please check '/' or '\\'");
         }
-        downloadFolderCheck(location);
+        createDownstreamDirs(location);
         
         ChannelSftp sftp = null;
         if(!properties.getKeyMode()) {
@@ -280,7 +280,7 @@ public class DefaultSftpFileService implements SftpFileService {
         }
     }
     
-    private void downloadFolderCheck(String location) {
+    private void createDownstreamDirs(String location) {
         File folder = new File(location);
         if(!folder.exists()) {
             try {
