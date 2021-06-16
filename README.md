@@ -19,6 +19,7 @@ public interface SftpFileService {
 ## 🚗 Download
 - [1.0](https://github.com/shirohoo/sftp-client/releases/tag/1.0)
 - [1.1](https://github.com/shirohoo/sftp-client/releases/tag/1.1)
+- [1.2](https://github.com/shirohoo/sftp-client/releases/tag/1.2)
 
 ---
 

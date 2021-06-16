@@ -32,7 +32,7 @@ public class DefaultSftpFileService implements SftpFileService {
         
         Session session = createSession(jsch, properties.getHost(), properties.getUsername(), properties.getPort());
         session.setPassword(properties.getPassword());
-        return getChannelSftpConnection(session);
+        return getChannelSftp(session);
     }
     
     private ChannelSftp connectByPrivateKey() throws Exception {
@@ -53,7 +53,7 @@ public class DefaultSftpFileService implements SftpFileService {
                  properties.getPassphrase());
         
         Session session = createSession(jsch, properties.getHost(), properties.getUsername(), properties.getPort());
-        return getChannelSftpConnection(session);
+        return getChannelSftp(session);
     }
     
     private Session createSession(JSch jsch, String host, String username, Integer port) throws Exception {
@@ -90,7 +90,7 @@ public class DefaultSftpFileService implements SftpFileService {
         }
     }
     
-    private ChannelSftp getChannelSftpConnection(Session session) throws JSchException {
+    private ChannelSftp getChannelSftp(Session session) throws JSchException {
         session.connect(properties.getSessionConnectTimeout());
         log.info("Session connected to {}", properties.getHost());
         
