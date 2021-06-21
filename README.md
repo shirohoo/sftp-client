@@ -1,6 +1,6 @@
 # 😎 SFTP-Module
 
-- Need Java8+
+- This module is need Java8+ and depend on `commons-io-2.8.0`, `commons-lang3-3.12.0`, `jsch-0.1.55`
 
 ## 🏁 API
 
