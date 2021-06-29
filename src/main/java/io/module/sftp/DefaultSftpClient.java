@@ -2,6 +2,7 @@ package io.module.sftp;
 
 import com.jcraft.jsch.*;
 import io.module.sftp.properties.SftpProperties;
+import java.awt.geom.IllegalPathStateException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -12,18 +13,18 @@ import java.util.UUID;
 
 import static java.util.Arrays.stream;
 
-public class DefaultSftpFileService implements SftpFileService {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefaultSftpFileService.class);
+public final class DefaultSftpClient implements SftpClient {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefaultSftpClient.class);
     
     private static final String STRICT_HOST_KEY_CHECKING = "StrictHostKeyChecking";
     
     private final SftpProperties properties;
     
-    public DefaultSftpFileService(SftpProperties properties) {
+    public DefaultSftpClient(SftpProperties properties) {
         this.properties = properties;
     }
     
-    private ChannelSftp connectByPassword() throws Exception {
+    private ChannelSftp connectByPassword() throws JSchException {
         JSch jsch = new JSch();
         log.info("Try to connect sftp[{}@{}], use password[{}]",
                  properties.getUsername(),
@@ -35,7 +36,7 @@ public class DefaultSftpFileService implements SftpFileService {
         return getChannelSftp(session);
     }
     
-    private ChannelSftp connectByPrivateKey() throws Exception {
+    private ChannelSftp connectByPrivateKey() throws JSchException {
         JSch jsch = new JSch();
         
         if(StringUtils.isNotBlank(properties.getPrivateKey())) {
@@ -56,7 +57,7 @@ public class DefaultSftpFileService implements SftpFileService {
         return getChannelSftp(session);
     }
     
-    private Session createSession(JSch jsch, String host, String username, Integer port) throws Exception {
+    private Session createSession(JSch jsch, String host, String username, Integer port) throws JSchException {
         Session session = null;
         if(port <= 0) {
             session = jsch.getSession(username, host);
@@ -65,7 +66,7 @@ public class DefaultSftpFileService implements SftpFileService {
             session = jsch.getSession(username, host, port);
         }
         if(session == null) {
-            throw new Exception(host + " session is null");
+            throw new JSchException(host + " session is null");
         }
         session.setConfig(STRICT_HOST_KEY_CHECKING, properties.getSessionStrictHostKeyChecking());
         return session;
@@ -101,7 +102,7 @@ public class DefaultSftpFileService implements SftpFileService {
     }
     
     @Override
-    public File read(String targetPath) throws Exception {
+    public File read(String targetPath) throws FileNotFoundException, JSchException {
         ChannelSftp sftp = null;
         if(!properties.getKeyMode()) {
             sftp = this.connectByPassword();
@@ -118,8 +119,8 @@ public class DefaultSftpFileService implements SftpFileService {
             }
         }
         catch(Exception e) {
-            log.error("Download file failure. target path: {}", targetPath, e);
-            throw new Exception("Download file failure");
+            log.error("Download file failure. target path: {}", targetPath);
+            throw new FileNotFoundException("Download file failure");
         }
         finally {
             this.disconnect(sftp);
@@ -134,12 +135,12 @@ public class DefaultSftpFileService implements SftpFileService {
     }
     
     @Override
-    public boolean upload(String targetPath, File file) throws Exception {
+    public boolean upload(String targetPath, File file) throws IOException, JSchException {
         return this.upload(targetPath, new FileInputStream(file));
     }
     
     @Override
-    public boolean upload(String targetPath, InputStream inputStream) throws Exception {
+    public boolean upload(String targetPath, InputStream inputStream) throws JSchException, IOException {
         ChannelSftp sftp = null;
         if(!properties.getKeyMode()) {
             sftp = this.connectByPassword();
@@ -172,12 +173,12 @@ public class DefaultSftpFileService implements SftpFileService {
             
         }
         catch(SftpException e) {
-            log.error("Found not root directory. path: {}", e.getMessage(), e);
-            throw new Exception("Found not root directory");
+            log.error("Found not root directory. path: {}", e.getMessage());
+            throw new IllegalPathStateException("Found not root directory");
         }
         catch(Exception e) {
-            log.error("Upload file failure. path: {}", targetPath, e);
-            throw new Exception("Upload file failure");
+            log.error("Upload file failure. path: {}", targetPath);
+            throw new IllegalPathStateException("Upload file failure");
         }
         finally {
             inputStream.close();
@@ -201,14 +202,14 @@ public class DefaultSftpFileService implements SftpFileService {
                         log.info("Create directory {}", dir);
                     }
                     catch(SftpException e1) {
-                        log.error("Create directory failure, directory:{}", dir, e1);
+                        log.error("Create directory failure, directory:{}", dir);
                     }
                     try {
                         sftp.cd(dir);
                         log.info("Change directory {}", dir);
                     }
                     catch(SftpException e1) {
-                        log.error("Change directory failure, directory:{}", dir, e1);
+                        log.error("Change directory failure, directory:{}", dir);
                     }
                 }
             }
@@ -218,7 +219,7 @@ public class DefaultSftpFileService implements SftpFileService {
     }
     
     @Override
-    public boolean remove(String targetPath) throws Exception {
+    public boolean remove(String targetPath) throws IllegalPathStateException, JSchException {
         ChannelSftp sftp = null;
         try {
             if(!properties.getKeyMode()) {
@@ -231,9 +232,9 @@ public class DefaultSftpFileService implements SftpFileService {
             sftp.rm(targetPath);
             return true;
         }
-        catch(Exception e) {
-            log.error("Delete file failure. path: {}", targetPath, e);
-            throw new Exception("Delete file failure");
+        catch(SftpException e) {
+            log.error("Delete file failure. path: {}", targetPath);
+            throw new IllegalPathStateException("Delete file failure");
         }
         finally {
             this.disconnect(sftp);
@@ -241,7 +242,7 @@ public class DefaultSftpFileService implements SftpFileService {
     }
     
     @Override
-    public boolean download(String targetPath, Path downloadPath) throws Exception {
+    public boolean download(String targetPath, Path downloadPath) throws JSchException {
         String path = downloadPath.toString();
         int index = path.lastIndexOf(File.separator);
         String location = null;
@@ -249,8 +250,8 @@ public class DefaultSftpFileService implements SftpFileService {
             location = path.substring(0, index);
         }
         catch(IndexOutOfBoundsException e) {
-            log.error("Invalid download path: {}", path, e);
-            throw new Exception("Invalid download path. please check '/' or '\\'");
+            log.error("Invalid download path: {}", path);
+            throw new IndexOutOfBoundsException("Invalid download path. please check '/' or '\\'");
         }
         createDownstreamDirs(location);
         
@@ -272,7 +273,7 @@ public class DefaultSftpFileService implements SftpFileService {
             return true;
         }
         catch(Exception e) {
-            log.error("Download file failure. download path: {}", path, e);
+            log.error("Download file failure. download path: {}", path);
             return false;
         }
         finally {
@@ -288,7 +289,7 @@ public class DefaultSftpFileService implements SftpFileService {
                 log.info("Create folder: {}", folder.getPath());
             }
             catch(Exception e) {
-                log.error("Can't create folder: {}", folder.getPath(), e);
+                log.error("Can't create folder: {}", folder.getPath());
             }
         }
         else {
