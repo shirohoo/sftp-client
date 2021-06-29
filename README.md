@@ -5,12 +5,12 @@
 ## 🏁 API
 
 ```java
-public interface SftpFileService {
-    File read(String targetPath) throws Exception;
-    boolean upload(String targetPath, File file) throws Exception;
-    boolean upload(String targetPath, InputStream inputStream) throws Exception;
-    boolean remove(String targetPath) throws Exception;
-    boolean download(String targetPath, Path downloadPath) throws Exception;
+public interface SftpClient {
+    File read(String targetPath) throws FileNotFoundException, JSchException;
+    boolean upload(String targetPath, File file) throws IOException, JSchException;
+    boolean upload(String targetPath, InputStream inputStream) throws JSchException, IOException;
+    boolean remove(String targetPath) throws JSchException;
+    boolean download(String targetPath, Path downloadPath) throws JSchException;
 }
 ```
 
@@ -20,6 +20,7 @@ public interface SftpFileService {
 - [1.0](https://github.com/shirohoo/sftp-client/releases/tag/1.0)
 - [1.1](https://github.com/shirohoo/sftp-client/releases/tag/1.1)
 - [1.2](https://github.com/shirohoo/sftp-client/releases/tag/1.2)
+- [1.3](https://github.com/shirohoo/sftp-client/releases/tag/1.3)
 
 ---
 
@@ -36,7 +37,7 @@ public interface SftpFileService {
 dependencies {
     implementation files('libs/sftp-client-{version}.jar')
     // for example:
-    // implementation files('libs/sftp-client-1.1.jar') 
+    // implementation files('libs/sftp-client-1.3.jar') 
 }
 ```
 
@@ -54,45 +55,45 @@ dependencies {
 import java.nio.file.Paths;
 
 @Bean
-public SftpFileService sftpService(){
-        SftpProperties properties=new SftpProperties();
-        properties.setHost("127.0.0.1");
-        properties.setUsername("username");
-        properties.setPassword("password");
-        properties.setRoot("/home");
-        return new DefaultSftpFileService(properties);
-        }
+public SftpClient sftpClient1() {
+    return new DefaultSftpClient(SftpProperties.builder()
+        .host("127.0.0.1")
+        .username("username")
+        .password("password")
+        .root("/home")
+        .build());
+}
 
 // for example:
 // use private key, pass phrase
 // required property
 @Bean
-public SftpFileService sftpService(){
-        SftpProperties properties=new SftpProperties();
-        properties.setKeyMode(true);
-        properties.setHost("127.0.0.1");
-        properties.setPrivateKey("key");
-        properties.setPassphrase("passphrase");
-        properties.setRoot("/home");
-        return new DefaultSftpFileService(properties);
-        }
+public SftpClient sftpClient() {
+    return new DefaultSftpClient(SftpProperties.builder()
+        .keyMode(true)
+        .host("127.0.0.1")
+        .privateKey("key")
+        .passphrase("passphrase")
+        .root("/home")
+        .build());
+}
 
 // usage
-public class FileService {
-    private SftpFileService sftpFileService;
+public class ExampleFileService {
+    private SftpClient sftpClient;
     
     // Constructor DI
-    public FileService(SftpFileService sftpFileService) {
-        this.sftpFileService = sftpFileService;
+    public ExampleFileService(SftpClient sftpClient) {
+        this.sftpClient = sftpClient;
     }
     
     public void example() throws Exception {
         // API
-        File read = sftpFileService.read("targetPath");
-        boolean upload_1 = sftpFileService.upload("targetPath", new File("uploadFile"));
-        boolean upload_2 = sftpFileService.upload("targetPath", new FileInputStream(new File("uploadFile")));
-        boolean remove = sftpFileService.remove("targetPath");
-        boolean download = sftpFileService.download("targetPath", Paths.get("downloadPath"));
+        File read = sftpClient.read("targetPath");
+        boolean upload_1 = sftpClient.upload("targetPath", new File("uploadFile"));
+        boolean upload_2 = sftpClient.upload("targetPath", new FileInputStream(new File("uploadFile")));
+        boolean remove = sftpClient.remove("targetPath");
+        boolean download = sftpClient.download("targetPath", Paths.get("downloadPath"));
     }
 }
 ```
