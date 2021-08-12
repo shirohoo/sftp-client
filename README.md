@@ -6,11 +6,11 @@
 
 ```java
 public interface SftpClient {
-    File read(String targetPath) throws FileNotFoundException, JSchException;
-    boolean upload(String targetPath, File file) throws IOException, JSchException;
-    boolean upload(String targetPath, InputStream inputStream) throws JSchException, IOException;
-    boolean remove(String targetPath) throws JSchException;
-    boolean download(String targetPath, Path downloadPath) throws JSchException;
+    File read(String targetPath);
+    boolean upload(String targetPath, File file);
+    boolean upload(String targetPath, InputStream inputStream);
+    boolean remove(String targetPath);
+    boolean download(String targetPath, Path downloadPath);
 }
 ```
 
