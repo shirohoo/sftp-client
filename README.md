@@ -21,6 +21,7 @@ public interface SftpClient {
 - [1.1](https://github.com/shirohoo/sftp-client/releases/tag/1.1)
 - [1.2](https://github.com/shirohoo/sftp-client/releases/tag/1.2)
 - [1.3](https://github.com/shirohoo/sftp-client/releases/tag/1.3)
+- [1.4](https://github.com/shirohoo/sftp-client/releases/tag/1.4)
 
 ---
 
@@ -60,7 +61,7 @@ public SftpClient sftpClient1() {
         .host("127.0.0.1")
         .username("username")
         .password("password")
-        .root("/home")
+        .root("/home") // base path folder after sftp connection
         .build());
 }
 
@@ -74,7 +75,7 @@ public SftpClient sftpClient() {
         .host("127.0.0.1")
         .privateKey("key")
         .passphrase("passphrase")
-        .root("/home")
+        .root("/home") // base path folder after sftp connection
         .build());
 }
 
