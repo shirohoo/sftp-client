@@ -5,8 +5,8 @@ plugins {
 }
 
 group = 'io.module'
-version = '1.3'
-sourceCompatibility = '1.8'
+version = '1.4'
+sourceCompatibility = JavaVersion.VERSION_1_8
 
 bootJar.enabled(false)
 jar.enabled(true)

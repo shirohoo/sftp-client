@@ -7,23 +7,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("SftpProperties_is_not_setup")
+@Disabled("SftpProperties is not setup")
 class DefaultSftpClientTest {
-    static final String USER_DIR = Paths.get(System.getProperty("user.home"), "sftp-module-test").toString();
-    static final String LOCAL_FILE_NAME = "sftp-test-file.txt";
-    static final String UPLOAD_FILE_PATH = "sftp/upload-file.txt";
-    static final String LOCAL_FILE_PATH = Paths.get(USER_DIR, LOCAL_FILE_NAME).toString();
-    static final String REMOTE_FILE_NAME = "download-file.txt";
-    static final Path DOWNLOAD_PATH = Paths.get("src", "main", "resources", "download", REMOTE_FILE_NAME);
-
-    SftpClient sftpService;
+    private SftpClient sftpService;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -32,15 +24,16 @@ class DefaultSftpClientTest {
                                                   .host("127.0.0.1")
                                                   .username("username")
                                                   .password("password")
-                                                  .root("/home")
+                                                  .root("/home") // entry point
                                                   .build();
         //---------------------------------------------------------//
 
         sftpService = new DefaultSftpClient(properties);
 
         //create file at local
-        File file = new File(LOCAL_FILE_PATH);
+        File file = new File(Paths.get(Paths.get(System.getProperty("user.home"), "sftp-module-test").toString(), "sftp-test-file.txt").toString());
         FileOutputStream stream = new FileOutputStream(file);
+
         try (OutputStreamWriter writer = new OutputStreamWriter(stream)) {
             if (!file.exists()) {
                 file.mkdirs();
@@ -52,7 +45,7 @@ class DefaultSftpClientTest {
     @AfterEach
     void tearDown() {
         //remove file at local
-        File file = new File(LOCAL_FILE_PATH);
+        File file = new File(Paths.get(Paths.get(System.getProperty("user.home"), "sftp-module-test").toString(), "sftp-test-file.txt").toString());
         boolean delete = file.delete();
         assertThat(delete).isTrue();
     }
@@ -60,10 +53,10 @@ class DefaultSftpClientTest {
     @Test
     void read() throws Exception {
         //given
-        sftpService.upload(LOCAL_FILE_NAME, new File(LOCAL_FILE_PATH));
+        sftpService.upload("sftp-test-file.txt", new File(Paths.get(Paths.get(System.getProperty("user.home"), "sftp-module-test").toString(), "sftp-test-file.txt").toString()));
 
         //when
-        File read = sftpService.read(LOCAL_FILE_NAME);
+        File read = sftpService.read("sftp-test-file.txt");
 
         //then
         assertThat(read).isNotNull().isFile().canRead().canRead();
@@ -72,10 +65,10 @@ class DefaultSftpClientTest {
     @Test
     void download() throws Exception {
         //given
-        sftpService.upload(LOCAL_FILE_NAME, new File(LOCAL_FILE_PATH));
+        sftpService.upload("sftp-test-file.txt", new File(Paths.get(Paths.get(System.getProperty("user.home"), "sftp-module-test").toString(), "sftp-test-file.txt").toString()));
 
         //when
-        boolean download = sftpService.download(LOCAL_FILE_NAME, DOWNLOAD_PATH);
+        boolean download = sftpService.download("sftp-test-file.txt", Paths.get("src", "main", "resources", "download", "download-file.txt"));
 
         //then
         assertThat(download).isTrue();
@@ -84,10 +77,10 @@ class DefaultSftpClientTest {
     @Test
     void uploadParamIsFile() throws Exception {
         //given
-        File file = new File(LOCAL_FILE_PATH);
+        File file = new File(Paths.get(Paths.get(System.getProperty("user.home"), "sftp-module-test").toString(), "sftp-test-file.txt").toString());
 
         //when
-        boolean upload = sftpService.upload(UPLOAD_FILE_PATH, file);
+        boolean upload = sftpService.upload("sftp/upload-file.txt", file);
 
         //then
         assertThat(upload).isTrue();
@@ -96,10 +89,10 @@ class DefaultSftpClientTest {
     @Test
     void uploadParamIsInputStream() throws Exception {
         //given
-        File localFile = new File(LOCAL_FILE_PATH);
+        File localFile = new File(Paths.get(Paths.get(System.getProperty("user.home"), "sftp-module-test").toString(), "sftp-test-file.txt").toString());
 
         //when
-        boolean upload = sftpService.upload(UPLOAD_FILE_PATH, new FileInputStream(localFile));
+        boolean upload = sftpService.upload("sftp/upload-file.txt", new FileInputStream(localFile));
 
         //then
         assertThat(upload).isTrue();
@@ -108,10 +101,10 @@ class DefaultSftpClientTest {
     @Test
     void remove() throws Exception {
         //given
-        sftpService.upload(LOCAL_FILE_NAME, new File(LOCAL_FILE_PATH));
+        sftpService.upload("sftp-test-file.txt", new File(Paths.get(Paths.get(System.getProperty("user.home"), "sftp-module-test").toString(), "sftp-test-file.txt").toString()));
 
         //when
-        boolean delete = sftpService.remove(LOCAL_FILE_NAME);
+        boolean delete = sftpService.remove("sftp-test-file.txt");
 
         //then
         assertThat(delete).isTrue();
