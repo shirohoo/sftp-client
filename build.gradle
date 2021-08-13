@@ -2,17 +2,19 @@ plugins {
     id 'org.springframework.boot' version '2.4.7'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
+    id 'maven'
+    id 'signing'
 }
 
-group = 'io.module'
-version = '1.4'
+group = 'io.github.shirohoo'
+archivesBaseName = 'sftp-client'
+version = '1.5'
 sourceCompatibility = JavaVersion.VERSION_1_8
 
 bootJar.enabled(false)
 jar.enabled(true)
 
 jar {
-    archivesBaseName = 'sftp-client'
     from {
         configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
     }
@@ -40,4 +42,67 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+signing {
+    sign configurations.archives
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name 'Example Application'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+                description 'A application used as an example on how to set up pushing  its components to the Central Repository.'
+                url 'http://www.example.com/example-application'
+
+                scm {
+                    connection 'scm:svn:http://foo.googlecode.com/svn/trunk/'
+                    developerConnection 'scm:svn:https://foo.googlecode.com/svn/trunk/'
+                    url 'http://foo.googlecode.com/svn/trunk/'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'manfred'
+                        name 'Manfred Moser'
+                        email 'manfred@sonatype.com'
+                    }
+                }
+            }
+        }
+    }
 }
