@@ -11,7 +11,7 @@ public interface SftpClient {
      * @param targetPath String
      * @return File
      */
-    File read(String targetPath);
+    File read(final String targetPath);
 
     /**
      * The location where you want to upload the file is passed as the first argument, and the file you want to upload as the second argument.
@@ -20,7 +20,7 @@ public interface SftpClient {
      * @param file File
      * @return boolean
      */
-    boolean upload(String targetPath, File file);
+    boolean upload(final String targetPath, final File file);
 
     /**
      * The location where you want to upload the file is passed as the first argument, and the InputStream of file you want to upload as the second argument.
@@ -29,22 +29,22 @@ public interface SftpClient {
      * @param inputStream InputStream
      * @return boolean
      */
-    boolean upload(String targetPath, InputStream inputStream);
+    boolean upload(final String targetPath, final InputStream inputStream);
 
     /**
      * If you pass the path to the file you want to remove as an argument, it will try to remove the file and return whether the removal succeeded or failed.
      * @param targetPath String
      * @return boolean
      */
-    boolean remove(String targetPath);
+    boolean remove(final String targetPath);
 
     /**
-     * Pass the path to the file you want to download from the remote server as the first argument. In this case, the first argument must include a file name.
+     * Pass the path to the file you want to download from the remote server as the first argument. In this case, the all argument must include a file name.
      * Enter the location where you want to save the downloaded file as the second argument.
      * Returns true if the download is successful, false if it fails
      * @param targetPath String
      * @param downloadPath Path
      * @return boolean
      */
-    boolean download(String targetPath, Path downloadPath);
+    boolean download(final String targetPath, Path downloadPath);
 }

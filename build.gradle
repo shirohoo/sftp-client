@@ -1,6 +1,4 @@
 plugins {
-    id 'org.springframework.boot' version '2.4.7'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id 'maven'
     id 'signing'
@@ -8,11 +6,8 @@ plugins {
 
 group = 'io.github.shirohoo'
 archivesBaseName = 'sftp-client'
-version = '1.5'
+version = '1.6'
 sourceCompatibility = JavaVersion.VERSION_1_8
-
-bootJar.enabled(false)
-jar.enabled(true)
 
 jar {
     from {
@@ -35,9 +30,14 @@ dependencies {
     extraLibs fileTree(include: ['*.jar'], dir: 'libs')
     configurations.compile.extendsFrom(configurations.extraLibs)
 
-    implementation 'org.springframework.boot:spring-boot-starter'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation (
+            'org.slf4j:slf4j-api:1.7.25'
+    )
+
+    testImplementation (
+            'org.junit.jupiter:junit-jupiter:5.6.0',
+            'org.assertj:assertj-core:3.15.0'
+    )
 }
 
 test {

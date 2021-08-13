@@ -1,12 +1,18 @@
 # 😎 SFTP-Module
 
+---
+
 `Spring Integration` was too complicated to configure, so it didn't work well for me, who just wanted to do `CRUD`.
 
 This module helps you to connect to a remote server through `SFTP` and do `CRUD` operations very simply.
 
 > This module is need Java8+ and depend on `commons-io-2.8.0`, `commons-lang3-3.12.0`, `jsch-0.1.55`
 
+<br />
+
 ## 🏁 API
+
+---
 
 ```java
 public interface SftpClient {
@@ -44,7 +50,7 @@ public interface SftpClient {
     boolean remove(String targetPath);
 
     /**
-     * Pass the path to the file you want to download from the remote server as the first argument. In this case, the first argument must include a file name.
+     * Pass the path to the file you want to download from the remote server as the first argument. In this case, the all argument must include a file name.
      * Enter the location where you want to save the downloaded file as the second argument.
      * Returns true if the download is successful, false if it fails
      * @param targetPath String
@@ -55,19 +61,21 @@ public interface SftpClient {
 }
 ```
 
+<br />
+
+## 🚗 Direct Download Jar
+
 ---
 
-## 🚗 Download
-- [1.0](https://github.com/shirohoo/sftp-client/releases/tag/1.0)
-- [1.1](https://github.com/shirohoo/sftp-client/releases/tag/1.1)
-- [1.2](https://github.com/shirohoo/sftp-client/releases/tag/1.2)
-- [1.3](https://github.com/shirohoo/sftp-client/releases/tag/1.3)
 - [1.4](https://github.com/shirohoo/sftp-client/releases/tag/1.4)
 - [1.5](https://github.com/shirohoo/sftp-client/releases/tag/1.5)
+- [1.6](https://github.com/shirohoo/sftp-client/releases/tag/1.6)
+
+<br />
+
+## 😝 Install with build tool
 
 ---
-
-## 😝 Install
 
 ### 📜 Maven
 ```xml
@@ -75,7 +83,7 @@ public interface SftpClient {
 <dependency>
   <groupId>io.github.shirohoo</groupId>
   <artifactId>sftp-client</artifactId>
-  <version>1.5</version>
+  <version>1.6</version>
 </dependency>
 ```
 
@@ -87,15 +95,17 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.github.shirohoo:sftp-client:1.5'
+    implementation 'io.github.shirohoo:sftp-client:1.6'
 }
 ```
 
+<br />
+
+## 🤔 How to use?
+
 ---
 
-## How to use?
-
-### 🤗 Set `SftpProperties` and Create `@Bean`
+### Setup `SftpProperties` and Create `@Bean`
 
 required property is `username`, `password` or `privateKey`, `passphrase`.
 
@@ -126,29 +136,12 @@ public SftpClient sftpClient() {
 }
 ```
 
-You can use `SftpClient` by DI.
+<br />
 
-```java
-public class ExampleFileService {
-    private SftpClient sftpClient;
-    
-    // Constructor DI
-    public ExampleFileService(SftpClient sftpClient) {
-        this.sftpClient = sftpClient;
-    }
-    
-    public void example() throws Exception {
-        // API
-        File read = sftpClient.read("targetPath");
-        boolean upload_1 = sftpClient.upload("targetPath", new File("uploadFile"));
-        boolean upload_2 = sftpClient.upload("targetPath", new FileInputStream(new File("uploadFile")));
-        boolean remove = sftpClient.remove("targetPath");
-        boolean download = sftpClient.download("targetPath", Paths.get("downloadPath"));
-    }
-}
-```
+### 🙄 Properties Detail
 
-### 🙄 Properties
+The detailed default implementation of `SftpProperties` is as follows.
+
 ```java
 public class SftpProperties {
     //--- default property ---//
@@ -166,3 +159,100 @@ public class SftpProperties {
     private String root;
 }
 ```
+
+<br />
+
+You can use `SftpClient` by `DI`.
+
+<br />
+
+```java
+public class ExampleFileService {
+    private final SftpClient sftpClient;
+    
+    public ExampleFileService(SftpClient sftpClient) {
+        this.sftpClient = sftpClient;
+    }
+    
+    public void example() throws Exception {
+        // APIs
+        File read = sftpClient.read("targetPath");
+        boolean upload_1 = sftpClient.upload("targetPath", new File("uploadFile"));
+        boolean upload_2 = sftpClient.upload("targetPath", new FileInputStream(new File("uploadFile")));
+        boolean remove = sftpClient.remove("targetPath");
+        boolean download = sftpClient.download("targetPath", Paths.get("downloadPath"));
+    }
+}
+```
+
+<br />
+
+### 💡 for example `read`:
+If you want to read `~/someDir/someFile.txt` from a remote server, you can use it like this: 
+
+Assume that `SftpProperties.root` is `~`.
+
+```java
+public File read() {
+    String wantReadFilePath = Paths.get("someDir", "someFile.txt").toString();
+    return sftpClient.read(wantReadFilePath);
+}
+```
+
+<br />
+
+### 💡 for example `upload`:
+`upload()` is the location where you want to upload the file is passed as the first argument, and the file you want to upload as the second argument.
+
+If you want to uplad `~/someDir/someFile.txt` to remote server, you can use it like this:
+
+Assume that `SftpProperties.root` is `~`.
+
+```java
+public boolean upload() {
+    String wantUploadFilePath = Paths.get("someDir", "someFile.txt").toString();
+    File uploadFile = new File("someFile");
+    return sftpClient.upload(wantUploadFilePath, uploadFile);
+}
+
+public boolean upload() {
+    String wantUploadFilePath = Paths.get("someDir", "someFile.txt").toString();
+    FileInputStream uploadFileInputStream = new FileInputStream(new File("someFile"));
+    return sftpClient.upload(wantUploadFilePath, uploadFileInputStream);
+}
+```
+
+<br />
+
+### 💡 for example `remove`:
+If you want to remove `~/someDir/someFile.txt` on a remote server, you can use something like this:
+
+Assume that `SftpProperties.root` is `~`.
+
+```java
+public boolean remove() {
+    String wantRemoveFilePath = Paths.get("someDir", "someFile.txt").toString(); 
+    return sftpClient.remove(wantRemoveFilePath);
+}
+```
+
+<br />
+
+### 💡 for example `download`:
+Pass the path to the file you want to download from the remote server as the first argument. In this case, the all argument must include a file name.
+
+And enter the location where you want to save the downloaded file as the second argument.
+
+If the path of the file to be downloaded from the remote server is `~/someDir/someFile.txt` and the path where this file will be downloaded is local `~/download/someFile.txt`, you can use it as follows.
+
+Also assume that `SftpProperties.root` is `~`.
+
+```java
+public File read() {
+    String targetFilePath = Paths.get("someDir", "someFile.txt").toString();
+    String downloadLocalPath = Paths.get(System.getProperty("user.home"), "download", "someFile.txt").toString();
+    return sftpClient.read(Paths.get(targetFilePath, downloadLocalPath));
+}
+```
+
+<br />

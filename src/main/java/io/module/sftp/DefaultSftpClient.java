@@ -15,6 +15,7 @@ import static java.util.Arrays.stream;
 
 public final class DefaultSftpClient implements SftpClient {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefaultSftpClient.class);
+
     private static final String STRICT_HOST_KEY_CHECKING = "StrictHostKeyChecking";
 
     private final SftpProperties properties;
@@ -99,7 +100,7 @@ public final class DefaultSftpClient implements SftpClient {
         }
     }
 
-    private ChannelSftp getChannelSftp(Session session) {
+    private ChannelSftp getChannelSftp(final Session session) {
         try {
             session.connect(properties.getSessionConnectTimeout());
         }
@@ -129,7 +130,7 @@ public final class DefaultSftpClient implements SftpClient {
     }
 
     @Override
-    public File read(String targetPath) {
+    public File read(final String targetPath) {
         return readFile(targetPath, getChannelSftp());
     }
 
@@ -169,7 +170,7 @@ public final class DefaultSftpClient implements SftpClient {
     }
 
     @Override
-    public boolean upload(String targetPath, File file) {
+    public boolean upload(final String targetPath, final File file) {
         try {
             return upload(targetPath, new FileInputStream(file));
         }
@@ -180,7 +181,7 @@ public final class DefaultSftpClient implements SftpClient {
     }
 
     @Override
-    public boolean upload(String targetPath, InputStream inputStream) {
+    public boolean upload(final String targetPath, final InputStream inputStream) {
         final ChannelSftp sftp = getChannelSftp();
         try {
             sftp.cd(properties.getRoot());
