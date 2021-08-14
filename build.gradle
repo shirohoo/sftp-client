@@ -76,16 +76,15 @@ uploadArchives {
             }
 
             pom.project {
-                name 'Example Application'
+                name 'sftp-client'
                 packaging 'jar'
-                // optionally artifactId can be defined here
-                description 'A application used as an example on how to set up pushing  its components to the Central Repository.'
-                url 'http://www.example.com/example-application'
+                description 'It helps to make handling CRUD operations via SFTP protocol very simple. This module is written based on JSch.'
+                url 'https://github.com/shirohoo/sftp-client'
 
                 scm {
-                    connection 'scm:svn:http://foo.googlecode.com/svn/trunk/'
-                    developerConnection 'scm:svn:https://foo.googlecode.com/svn/trunk/'
-                    url 'http://foo.googlecode.com/svn/trunk/'
+                    connection 'https://github.com/shirohoo/sftp-client'
+                    developerConnection 'https://shirohoo.github.io/'
+                    url 'https://github.com/shirohoo/sftp-client'
                 }
 
                 licenses {
@@ -97,9 +96,9 @@ uploadArchives {
 
                 developers {
                     developer {
-                        id 'manfred'
-                        name 'Manfred Moser'
-                        email 'manfred@sonatype.com'
+                        id 'shirohoo'
+                        name 'Changhun Han'
+                        email 'shirohoo4102@gmail.com'
                     }
                 }
             }
