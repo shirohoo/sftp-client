@@ -67,9 +67,7 @@ public interface SftpClient {
 
 ---
 
-- [1.4](https://github.com/shirohoo/sftp-client/releases/tag/1.4)
-- [1.5](https://github.com/shirohoo/sftp-client/releases/tag/1.5)
-- [1.6](https://github.com/shirohoo/sftp-client/releases/tag/1.6)
+- [1.7](https://github.com/shirohoo/sftp-client/releases/tag/1.7)
 
 <br />
 
