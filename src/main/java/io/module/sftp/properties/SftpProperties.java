@@ -16,6 +16,25 @@ public class SftpProperties {
     private String passphrase;
     private String root;
 
+    public SftpProperties() {}
+
+    public SftpProperties(Boolean keyMode, String protocol, Integer port, String sessionStrictHostKeyChecking,
+            Integer sessionConnectTimeout, Integer channelConnectedTimeout, String host, String username,
+            String password, String privateKey, String passphrase, String root) {
+        this.keyMode = keyMode;
+        this.protocol = protocol;
+        this.port = port;
+        this.sessionStrictHostKeyChecking = sessionStrictHostKeyChecking;
+        this.sessionConnectTimeout = sessionConnectTimeout;
+        this.channelConnectedTimeout = channelConnectedTimeout;
+        this.host = host;
+        this.username = username;
+        this.password = password;
+        this.privateKey = privateKey;
+        this.passphrase = passphrase;
+        this.root = root;
+    }
+
     public Boolean getKeyMode() {
         return keyMode;
     }
@@ -64,34 +83,8 @@ public class SftpProperties {
         return root;
     }
 
-    private SftpProperties(Boolean keyMode, String protocol, Integer port, String sessionStrictHostKeyChecking,
-                           Integer sessionConnectTimeout, Integer channelConnectedTimeout, String host, String username,
-                           String password, String privateKey, String passphrase, String root) {
-        this.keyMode = keyMode;
-        this.protocol = protocol;
-        this.port = port;
-        this.sessionStrictHostKeyChecking = sessionStrictHostKeyChecking;
-        this.sessionConnectTimeout = sessionConnectTimeout;
-        this.channelConnectedTimeout = channelConnectedTimeout;
-        this.host = host;
-        this.username = username;
-        this.password = password;
-        this.privateKey = privateKey;
-        this.passphrase = passphrase;
-        this.root = root;
-    }
-
     public static SftpPropertiesBuilder builder() {
         return new SftpPropertiesBuilder();
-    }
-
-    public String toString() {
-        return "SftpProperties(keyMode=" + this.getKeyMode() + ", protocol=" + this.getProtocol() + ", port=" + this
-                .getPort() + ", sessionStrictHostKeyChecking=" + this.getSessionStrictHostKeyChecking()
-               + ", sessionConnectTimeout=" + this.getSessionConnectTimeout() + ", channelConnectedTimeout=" + this
-                       .getChannelConnectedTimeout() + ", host=" + this.getHost() + ", username=" + this.getUsername()
-               + ", password=" + this.getPassword() + ", privateKey=" + this.getPrivateKey() + ", passphrase=" + this
-                       .getPassphrase() + ", root=" + this.getRoot() + ")";
     }
 
     public static class SftpPropertiesBuilder {
@@ -190,7 +183,7 @@ public class SftpProperties {
                 channelConnectedTimeout = 15_000;
             }
             return new SftpProperties(keyMode, protocol, port, sessionStrictHostKeyChecking, sessionConnectTimeout,
-                                      channelConnectedTimeout, host, username, password, privateKey, passphrase, root);
+                    channelConnectedTimeout, host, username, password, privateKey, passphrase, root);
         }
     }
 }
