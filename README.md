@@ -114,9 +114,9 @@ You must make the following essential settings:
 @Bean
 public SftpClient sftpClient() {
     return new DefaultSftpClient(SftpProperties.builder()
-        .host("127.0.0.1")
-        .username("username")
-        .password("password")
+        .host("127.0.0.1") // host ip address of remote server you want to connect to
+        .username("username") // username of remote server you want to connect to
+        .password("password") // password of remote server you want to connect to
         .root("/home") // base path folder after sftp connection
         .build());
 }
@@ -125,10 +125,10 @@ public SftpClient sftpClient() {
 @Bean
 public SftpClient sftpClient() {
     return new DefaultSftpClient(SftpProperties.builder()
-        .keyMode(true)
-        .host("127.0.0.1")
-        .privateKey("key")
-        .passphrase("passphrase")
+        .keyMode(true) // you should set this option to true if you want to access using private key
+        .host("127.0.0.1") // host ip address of remote server you want to connect to
+        .privateKey("privateKey") // privateKey of remote server you want to connect to
+        .passphrase("passphrase") // passphrase of remote server you want to connect to
         .root("/home") // base path folder after sftp connection
         .build());
 }
