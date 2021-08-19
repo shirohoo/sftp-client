@@ -254,3 +254,7 @@ public File read() {
 ```
 
 <br />
+
+# 📜 License
+
+This module is open source software released under the Apache 2.0 license.
