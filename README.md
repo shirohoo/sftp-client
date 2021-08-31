@@ -18,11 +18,21 @@ This module helps you to connect to a remote server through `SFTP` and do `CRUD`
 public interface SftpClient {
     /**
      * Pass the path of the file you want to read as an argument. The starting path is the root of SftpProperties.
-     * For example, if root is ~/ and the path passed as an argument is user/temp/test.txt , SftpClient reads ~/user/temp/test.txt and returns it as a File object.
+     * For example, if root is ~/ and the path passed as an argument is user/temp/someFile.txt , SftpClient reads ~/user/temp/someFile.txt and returns it as a File object.
+     * At this time, the transferred file is not saved on the client hard disk, but only in client memory.
      * @param targetPath String
      * @return File
      */
-    File read(String targetPath);
+    File read(final String targetPath);
+
+    /**
+     * Pass the path of the file you want to read as an argument. The starting path is the root of SftpProperties.
+     * For example, if root is ~/ and the path passed as an argument is user/temp/someDir (last args is directory name) , SftpClient reads ~/user/temp/someDir and returns it as a List {@literal <}File> object.
+     *
+     * @param dirPath String
+     * @return List {@literal <}File>
+     */
+    List<File> listFiles(final String dirPath);
 
     /**
      * The location where you want to upload the file is passed as the first argument, and the file you want to upload as the second argument.
@@ -67,7 +77,7 @@ public interface SftpClient {
 
 ---
 
-- [1.8](https://github.com/shirohoo/sftp-client/releases/tag/1.8)
+- [1.9](https://github.com/shirohoo/sftp-client/releases/tag/1.9)
 
 <br />
 
@@ -81,7 +91,7 @@ public interface SftpClient {
 <dependency>
   <groupId>io.github.shirohoo</groupId>
   <artifactId>sftp-client</artifactId>
-  <version>1.8</version>
+  <version>1.9</version>
 </dependency>
 ```
 
@@ -93,7 +103,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.github.shirohoo:sftp-client:1.8'
+    implementation 'io.github.shirohoo:sftp-client:1.9'
 }
 ```
 
@@ -175,6 +185,7 @@ public class ExampleFileService {
     public void example() throws Exception {
         // APIs
         File read = sftpClient.read("targetPath");
+        List<File> files = sftpClient.listFiles("dirPath");
         boolean upload_1 = sftpClient.upload("targetPath", new File("uploadFile"));
         boolean upload_2 = sftpClient.upload("targetPath", new FileInputStream(new File("uploadFile")));
         boolean remove = sftpClient.remove("targetPath");
@@ -194,6 +205,20 @@ Assume that `SftpProperties.root` is `~`.
 public File read() {
     String wantReadFilePath = Paths.get("someDir", "someFile.txt").toString();
     return sftpClient.read(wantReadFilePath);
+}
+```
+
+<br />
+
+### 💡 for example `listFiles`:
+If you want to read all files in `~/someDir1/someDir2` from a remote server, you can use it like this:
+
+Assume that `SftpProperties.root` is `~`.
+
+```java
+public List<File> listFiles() {
+    String wantReadDirPath = Paths.get("someDir1", "someDir2").toString();
+    return sftpClient.listFiles(wantReadDirPath);
 }
 ```
 
