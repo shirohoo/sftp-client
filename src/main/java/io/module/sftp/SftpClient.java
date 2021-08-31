@@ -1,17 +1,31 @@
 package io.module.sftp;
 
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.ChannelSftp.LsEntry;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Vector;
 
 public interface SftpClient {
     /**
      * Pass the path of the file you want to read as an argument. The starting path is the root of SftpProperties.
-     * For example, if root is ~/ and the path passed as an argument is user/temp/test.txt , SftpClient reads ~/user/temp/test.txt and returns it as a File object.
+     * For example, if root is ~/ and the path passed as an argument is user/temp/someFile.txt , SftpClient reads ~/user/temp/someFile.txt and returns it as a File object.
+     * At this time, the transferred file is not saved on the client hard disk, but only in client memory.
      * @param targetPath String
      * @return File
      */
     File read(final String targetPath);
+
+    /**
+     * Pass the path of the file you want to read as an argument. The starting path is the root of SftpProperties.
+     * For example, if root is ~/ and the path passed as an argument is user/temp/someDir (last args is directory name) , SftpClient reads ~/user/temp/someDir and returns it as a List {@literal <}File> object.
+     *
+     * @param dirPath String
+     * @return List {@literal <}File>
+     */
+    List<File> listFiles(final String dirPath);
 
     /**
      * The location where you want to upload the file is passed as the first argument, and the file you want to upload as the second argument.

@@ -6,7 +6,7 @@ plugins {
 
 group = 'io.github.shirohoo'
 archivesBaseName = 'sftp-client'
-version = '1.8'
+version = '1.9'
 sourceCompatibility = JavaVersion.VERSION_1_8
 
 jar {
