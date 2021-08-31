@@ -173,6 +173,7 @@ public final class DefaultSftpClient implements SftpClient {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<File> listFiles(final String dirPath) {
         final ChannelSftp sftp = getChannelSftp();
         try {

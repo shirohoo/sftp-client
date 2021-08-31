@@ -1,3 +1,5 @@
+import javax.tools.JavaCompiler
+
 plugins {
     id 'java'
     id 'maven'
@@ -8,6 +10,12 @@ group = 'io.github.shirohoo'
 archivesBaseName = 'sftp-client'
 version = '1.9'
 sourceCompatibility = JavaVersion.VERSION_1_8
+
+gradle.projectsEvaluated {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:unchecked"
+    }
+}
 
 jar {
     from {

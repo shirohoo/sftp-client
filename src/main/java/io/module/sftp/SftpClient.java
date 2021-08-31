@@ -20,10 +20,10 @@ public interface SftpClient {
 
     /**
      * Pass the path of the file you want to read as an argument. The starting path is the root of SftpProperties.
-     * For example, if root is ~/ and the path passed as an argument is user/temp/someDir (last args is directory name) , SftpClient reads ~/user/temp/someDir and returns it as a List {@literal <}File> object.
+     * For example, if root is ~/ and the path passed as an argument is user/temp/someDir (last args is directory name) , SftpClient reads ~/user/temp/someDir and returns it as a List {@literal <}File{@literal >} object.
      *
      * @param dirPath String
-     * @return List {@literal <}File>
+     * @return List {@literal <}File{@literal >}
      */
     List<File> listFiles(final String dirPath);
 
