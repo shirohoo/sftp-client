@@ -271,10 +271,10 @@ If the path of the file to be downloaded from the remote server is `~/someDir/so
 Also assume that `SftpProperties.root` is `~`.
 
 ```java
-public File read() {
+public boolean download() {
     String targetFilePath = Paths.get("someDir", "someFile.txt").toString();
     String downloadLocalPath = Paths.get(System.getProperty("user.home"), "download", "someFile.txt").toString();
-    return sftpClient.read(Paths.get(targetFilePath, downloadLocalPath));
+    return sftpClient.downlad(Paths.get(targetFilePath, downloadLocalPath));
 }
 ```
 
