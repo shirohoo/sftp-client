@@ -3,6 +3,7 @@ package io.module.sftp;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.ChannelSftp.LsEntry;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
@@ -43,7 +44,7 @@ public interface SftpClient {
      * @param inputStream InputStream
      * @return boolean
      */
-    boolean upload(final String targetPath, final InputStream inputStream);
+    boolean upload(final String targetPath, final InputStream inputStream) throws IOException;
 
     /**
      * If you pass the path to the file you want to remove as an argument, it will try to remove the file and return whether the removal succeeded or failed.
