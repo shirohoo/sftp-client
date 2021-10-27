@@ -1,6 +1,7 @@
 package io.module.sftp;
 
 import static java.util.Arrays.stream;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelSftp;
@@ -81,14 +82,15 @@ public final class DefaultSftpClient implements SftpClient {
         return port <= 0 ? jsch.getSession(username, host) : jsch.getSession(username, host, port);
     }
 
-    private void close(final ChannelSftp sftp) throws JSchException {
+    private void disconnect(final ChannelSftp sftp) throws JSchException {
+        if (isNull(sftp)) {
+            return;
+        }
         if (sftp.isConnected()) {
             sftp.disconnect();
-            return;
         }
         if (sftp.isClosed()) {
             log.info("Sftp is closed already");
-            return;
         }
         if (nonNull(sftp.getSession())) {
             sftp.getSession().disconnect();
@@ -129,9 +131,7 @@ public final class DefaultSftpClient implements SftpClient {
                 String.format("Download file failure. target path: %s", targetPath)
             );
         } finally {
-            if (nonNull(sftp)) {
-                close(sftp);
-            }
+            disconnect(sftp);
             log.info("Disconnected sftp connection.");
         }
     }
@@ -164,9 +164,7 @@ public final class DefaultSftpClient implements SftpClient {
             log.error("Download file list failure. target path: {}", dirPath);
             throw new NoSuchFileException(dirPath);
         } finally {
-            if (nonNull(sftp)) {
-                close(sftp);
-            }
+            disconnect(sftp);
             log.info("Disconnected sftp connection.");
         }
     }
@@ -203,9 +201,7 @@ public final class DefaultSftpClient implements SftpClient {
         } finally {
             inputStream.close();
             log.info("Closed input stream.");
-            if (nonNull(sftp)) {
-                close(sftp);
-            }
+            disconnect(sftp);
             log.info("Disconnected sftp connection.");
         }
     }
@@ -263,9 +259,7 @@ public final class DefaultSftpClient implements SftpClient {
             log.error("Delete file failure. path: {}", targetPath);
             return false;
         } finally {
-            if (nonNull(sftp)) {
-                close(sftp);
-            }
+            disconnect(sftp);
             log.info("Disconnected sftp connection.");
         }
     }
@@ -322,9 +316,7 @@ public final class DefaultSftpClient implements SftpClient {
             log.error("Download file failure. download path: {}", path);
             return false;
         } finally {
-            if (nonNull(sftp)) {
-                close(sftp);
-            }
+            disconnect(sftp);
             log.info("Disconnected sftp connection.");
         }
     }
