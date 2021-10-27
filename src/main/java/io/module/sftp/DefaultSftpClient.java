@@ -1,23 +1,34 @@
 package io.module.sftp;
 
-import com.jcraft.jsch.*;
+import static java.util.Arrays.stream;
+import static java.util.Objects.nonNull;
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.ChannelSftp.LsEntry;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 import io.module.sftp.properties.SftpProperties;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.UUID;
+import java.util.Vector;
+import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
-import java.io.*;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.Vector;
-import java.util.stream.Collectors;
-
-import static java.util.Arrays.stream;
-
 public final class DefaultSftpClient implements SftpClient {
+
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefaultSftpClient.class);
 
     private static final String STRICT_HOST_KEY_CHECKING = "StrictHostKeyChecking";
@@ -28,14 +39,14 @@ public final class DefaultSftpClient implements SftpClient {
         this.properties = properties;
     }
 
-    private ChannelSftp connectByPassword() {
+    private ChannelSftp connectByPassword() throws JSchException {
         log.info("Try to connect sftp[{}@{}], use password[{}]", properties.getUsername(), properties.getHost(), properties.getPassword());
         final Session session = createSession(new JSch(), properties.getHost(), properties.getUsername(), properties.getPort());
         session.setPassword(properties.getPassword());
         return getChannelSftp(session);
     }
 
-    private ChannelSftp connectByPrivateKey() {
+    private ChannelSftp connectByPrivateKey() throws JSchException {
         return getChannelSftp(createSession(getJsch(), properties.getHost(), properties.getUsername(), properties.getPort()));
     }
 
@@ -52,41 +63,22 @@ public final class DefaultSftpClient implements SftpClient {
         try {
             if (StringUtils.isNotBlank(properties.getPassphrase())) {
                 jsch.addIdentity(properties.getPrivateKey(), properties.getPassphrase());
-            }
-            else {
+            } else {
                 jsch.addIdentity(properties.getPrivateKey());
             }
-        }
-        catch (JSchException e) {
+        } catch (JSchException e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    private Session createSession(final JSch jsch, final String host, final String username, final int port) {
+    private Session createSession(final JSch jsch, final String host, final String username, final int port) throws JSchException {
         final Session session = getSession(jsch, host, username, port);
         session.setConfig(STRICT_HOST_KEY_CHECKING, properties.getSessionStrictHostKeyChecking());
-        return Objects.requireNonNull(session, host + " must not be null!");
+        return session;
     }
 
-    private Session getSession(final JSch jsch, final String host, final String username, final int port) {
-        try {
-            return port <= 0 ? jsch.getSession(username, host) : jsch.getSession(username, host, port);
-        }
-        catch (JSchException e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
-    }
-
-    private void disconnect(final ChannelSftp sftp) {
-        try {
-            if (Objects.nonNull(sftp)) {
-                close(sftp);
-            }
-        }
-        catch (JSchException e) {
-            log.error(e.getMessage(), e);
-        }
+    private Session getSession(final JSch jsch, final String host, final String username, final int port) throws JSchException {
+        return port <= 0 ? jsch.getSession(username, host) : jsch.getSession(username, host, port);
     }
 
     private void close(final ChannelSftp sftp) throws JSchException {
@@ -98,101 +90,83 @@ public final class DefaultSftpClient implements SftpClient {
             log.info("Sftp is closed already");
             return;
         }
-        if (Objects.nonNull(sftp.getSession())) {
+        if (nonNull(sftp.getSession())) {
             sftp.getSession().disconnect();
-            return;
         }
     }
 
-    private ChannelSftp getChannelSftp(final Session session) {
+    private ChannelSftp getChannelSftp(final Session session) throws JSchException {
         try {
             session.connect(properties.getSessionConnectTimeout());
-        }
-        catch (JSchException e) {
+        } catch (JSchException e) {
             log.error(e.getMessage(), e);
         }
         log.info("Session connected to {}", properties.getHost());
         return getChannel(session);
     }
 
-    private ChannelSftp getChannel(final Session session) {
-        Channel channel = null;
-        try {
-            channel = session.openChannel(properties.getProtocol());
-        }
-        catch (JSchException e) {
-            log.error(e.getMessage(), e);
-        }
-        try {
-            channel.connect(properties.getChannelConnectedTimeout());
-        }
-        catch (JSchException e) {
-            log.error(e.getMessage(), e);
-        }
+    private ChannelSftp getChannel(final Session session) throws JSchException {
+        Channel channel = session.openChannel(properties.getProtocol());
+        channel.connect(properties.getChannelConnectedTimeout());
         log.info("Channel created to {}", properties.getHost());
         return (ChannelSftp) channel;
     }
 
     @Override
-    public File read(final String targetPath) {
+    public File read(final String targetPath) throws JSchException, NotDirectoryException {
         return readFile(targetPath, getChannelSftp());
     }
 
-    private File readFile(final String targetPath, final ChannelSftp sftp) {
+    private File readFile(final String targetPath, final ChannelSftp sftp) throws JSchException, NotDirectoryException {
         try {
             sftp.cd(properties.getRoot());
             log.info("Change directory to {}", properties.getRoot());
             try (InputStream inputStream = sftp.get(targetPath)) {
                 return convertInputStreamToFile(inputStream);
             }
-        }
-        catch (Exception e) {
-            log.error("Download file failure. target path: {}", targetPath);
-            return null;
-        }
-        finally {
-            this.disconnect(sftp);
+        } catch (Exception e) {
+            throw new NotDirectoryException(
+                String.format("Download file failure. target path: %s", targetPath)
+            );
+        } finally {
+            if (nonNull(sftp)) {
+                close(sftp);
+            }
             log.info("Disconnected sftp connection.");
         }
     }
 
-    private File convertInputStreamToFile(final InputStream inputStream) {
-        File tempFile = null;
-        try {
-            tempFile = File.createTempFile(UUID.randomUUID().toString(), ".tmp");
-            IOUtils.copy(inputStream, new FileOutputStream(tempFile));
-        }
-        catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
+    private File convertInputStreamToFile(final InputStream inputStream) throws IOException {
+        File tempFile = File.createTempFile(UUID.randomUUID().toString(), ".tmp");
+        IOUtils.copy(inputStream, new FileOutputStream(tempFile));
         tempFile.deleteOnExit();
         return tempFile;
     }
 
-    private ChannelSftp getChannelSftp() {
-        return properties.getKeyMode() ? this.connectByPrivateKey() : this.connectByPassword();
+    private ChannelSftp getChannelSftp() throws JSchException {
+        return properties.getKeyMode() ? connectByPrivateKey() : connectByPassword();
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<File> listFiles(final String dirPath) {
+    public List<File> listFiles(final String dirPath) throws JSchException, NoSuchFileException {
         final ChannelSftp sftp = getChannelSftp();
         try {
             sftp.cd(properties.getRoot());
             log.info("Change directory to {}", properties.getRoot());
             return ((Vector<LsEntry>) sftp.ls(dirPath))
-                    .stream()
-                    .filter(DefaultSftpClient::isFile)
-                    .map(LsEntry::getFilename)
-                    .map(File::new)
-                    .collect(Collectors.toList());
-        }
-        catch (Exception e) {
+                .stream()
+                .filter(DefaultSftpClient::isFile)
+                .map(LsEntry::getFilename)
+                .map(File::new)
+                .collect(Collectors.toList());
+        } catch (Exception e) {
             log.error("Download file list failure. target path: {}", dirPath);
-            return null;
-        }
-        finally {
-            this.disconnect(sftp);
+            throw new NoSuchFileException(dirPath);
+        } finally {
+            if (nonNull(sftp)) {
+                close(sftp);
+            }
             log.info("Disconnected sftp connection.");
         }
     }
@@ -202,22 +176,17 @@ public final class DefaultSftpClient implements SftpClient {
     }
 
     @Override
-    public boolean upload(final String targetPath, final File file) {
+    public boolean upload(final String targetPath, final File file) throws JSchException {
         try {
             return upload(targetPath, new FileInputStream(file));
-        }
-        catch (FileNotFoundException e) {
-            log.error(e.getMessage(), e);
-            return false;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error(e.getMessage(), e);
             return false;
         }
     }
 
     @Override
-    public boolean upload(final String targetPath, final InputStream inputStream) throws IOException {
+    public boolean upload(final String targetPath, final InputStream inputStream) throws IOException, JSchException {
         final ChannelSftp sftp = getChannelSftp();
         try {
             sftp.cd(properties.getRoot());
@@ -225,96 +194,84 @@ public final class DefaultSftpClient implements SftpClient {
 
             sftp.put(inputStream, getFileName(targetPath, sftp, targetPath.lastIndexOf("/")));
             return true;
-        }
-        catch (SftpException e) {
+        } catch (SftpException e) {
             log.error("Found not root directory. path: {}", e.getMessage());
             return false;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Upload file failure. path: {}", targetPath);
             return false;
-        }
-        finally {
+        } finally {
             inputStream.close();
             log.info("Closed input stream.");
-            this.disconnect(sftp);
+            if (nonNull(sftp)) {
+                close(sftp);
+            }
             log.info("Disconnected sftp connection.");
         }
     }
 
-    private String getFileName(final String targetPath, final ChannelSftp sftp, final int index) throws Exception {
+    private String getFileName(final String targetPath, final ChannelSftp sftp, final int index) {
         if (index != -1) {
-            verifyDirs(targetPath, sftp, targetPath.substring(0, index));
+            final String dirName = targetPath.substring(0, index);
+            createUpstreamDirs(dirName, sftp);
             return targetPath.substring(index + 1);
         }
         return targetPath;
     }
 
-    private void verifyDirs(final String targetPath, final ChannelSftp sftp, final String dirName) throws Exception {
-        if (!this.createUpstreamDirs(dirName, sftp)) {
-            log.error("Remote path error. path:{}", targetPath);
-            throw new Exception("Upload File failure");
-        }
-    }
-
-    private boolean createUpstreamDirs(final String dirPath, final ChannelSftp sftp) {
-        if (isNonBlank(dirPath) && Objects.nonNull(sftp)) {
+    private void createUpstreamDirs(final String dirPath, final ChannelSftp sftp) {
+        if (isNonBlank(dirPath) && nonNull(sftp)) {
             stream(stream(dirPath.split("/"))
-                    .filter(StringUtils::isNotBlank)
-                    .toArray(String[]::new))
-                    .forEach(dir -> mkdir(sftp, dir));
-            return true;
+                .filter(StringUtils::isNotBlank)
+                .toArray(String[]::new))
+                .forEach(dir -> mkdir(sftp, dir));
         }
-        return false;
     }
 
     private boolean isNonBlank(final String dirPath) {
-        return Objects.nonNull(dirPath) && !dirPath.isEmpty();
+        return nonNull(dirPath) && !dirPath.isEmpty();
     }
 
     private void mkdir(final ChannelSftp sftp, final String dir) {
         try {
             sftp.cd(dir);
             log.info("Change directory {}", dir);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             try {
                 sftp.mkdir(dir);
                 log.info("Create directory {}", dir);
-            }
-            catch (SftpException e1) {
+            } catch (SftpException e1) {
                 log.error("Create directory failure, directory:{}", dir);
             }
             try {
                 sftp.cd(dir);
                 log.info("Change directory {}", dir);
-            }
-            catch (SftpException e1) {
+            } catch (SftpException e1) {
                 log.error("Change directory failure, directory:{}", dir);
             }
         }
     }
 
     @Override
-    public boolean remove(final String targetPath) {
+    public boolean remove(final String targetPath) throws JSchException {
         final ChannelSftp sftp = getChannelSftp();
         try {
             sftp.cd(properties.getRoot());
             sftp.rm(targetPath);
             return true;
-        }
-        catch (SftpException e) {
+        } catch (SftpException e) {
             log.error("Delete file failure. path: {}", targetPath);
             return false;
-        }
-        finally {
-            this.disconnect(sftp);
+        } finally {
+            if (nonNull(sftp)) {
+                close(sftp);
+            }
             log.info("Disconnected sftp connection.");
         }
     }
 
     @Override
-    public boolean download(final String targetPath, final Path downloadPath) {
+    public boolean download(final String targetPath, final Path downloadPath) throws JSchException {
         final String path = downloadPath.toString();
         if (!isMkdir(path)) {
             return false;
@@ -323,20 +280,16 @@ public final class DefaultSftpClient implements SftpClient {
     }
 
     private boolean isMkdir(final String path) {
-        final String location = getLocation(path);
-        if (Objects.isNull(location)) {
-            return false;
-        }
-        return createDownstreamDirs(location);
+        return createDownstreamDirs(getLocation(path));
     }
 
     private String getLocation(final String path) {
         try {
             return path.substring(0, path.lastIndexOf(File.separator));
-        }
-        catch (IndexOutOfBoundsException e) {
-            log.error("Invalid download path: {}. please check '/' or '\\'", path);
-            return null;
+        } catch (IndexOutOfBoundsException e) {
+            throw new IndexOutOfBoundsException(
+                String.format("Invalid download path: %s. please check '/' or '\\'", path)
+            );
         }
     }
 
@@ -347,9 +300,8 @@ public final class DefaultSftpClient implements SftpClient {
                 folder.mkdirs();
                 log.info("Create folder: {}", folder.getPath());
                 return true;
-            }
-            catch (Exception e) {
-                log.error("Can't create folder: {}", folder.getPath());
+            } catch (Exception e) {
+                log.error("{}. Can't create folder: {}", e.getMessage(), folder.getPath());
                 return false;
             }
         }
@@ -357,7 +309,7 @@ public final class DefaultSftpClient implements SftpClient {
         return false;
     }
 
-    private boolean download(final String targetPath, final String path) {
+    private boolean download(final String targetPath, final String path) throws JSchException {
         final ChannelSftp sftp = getChannelSftp();
         try (OutputStream outputStream = new FileOutputStream(path)) {
             sftp.cd(properties.getRoot());
@@ -366,14 +318,15 @@ public final class DefaultSftpClient implements SftpClient {
             sftp.get(targetPath, outputStream);
             log.info("Download file success. download path: {}", path);
             return true;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Download file failure. download path: {}", path);
             return false;
-        }
-        finally {
-            this.disconnect(sftp);
+        } finally {
+            if (nonNull(sftp)) {
+                close(sftp);
+            }
             log.info("Disconnected sftp connection.");
         }
     }
+
 }
