@@ -1,4 +1,4 @@
-package io.module.sftp;
+package io.github.shirohoo.sftp;
 
 import com.jcraft.jsch.JSchException;
 import java.io.File;
@@ -24,28 +24,28 @@ public interface SftpClient {
      * Pass the path of the file you want to read as an argument. The starting path is the root of SftpProperties. For example, if root is ~/ and the path passed as an argument is user/temp/someDir (last args is directory name) , SftpClient reads
      * ~/user/temp/someDir and returns it as a List {@literal <}File{@literal >} object.
      *
-     * @param dirPath String
+     * @param targetDirPath String
      * @return List {@literal <}File{@literal >}
      */
-    List<File> listFiles(final String dirPath) throws JSchException, NoSuchFileException;
+    List<File> listFiles(final String targetDirPath) throws JSchException, NoSuchFileException;
 
     /**
      * The location where you want to upload the file is passed as the first argument, and the file you want to upload as the second argument. In this case, the first argument must also include the name of the file.
      *
      * @param targetPath String
-     * @param file       File
+     * @param uploadFile       File
      * @return boolean
      */
-    boolean upload(final String targetPath, final File file) throws JSchException;
+    boolean upload(final String targetPath, final File uploadFile) throws JSchException;
 
     /**
      * The location where you want to upload the file is passed as the first argument, and the InputStream of file you want to upload as the second argument. In this case, the first argument must also include the name of the file.
      *
      * @param targetPath  String
-     * @param inputStream InputStream
+     * @param uploadFileStream InputStream
      * @return boolean
      */
-    boolean upload(final String targetPath, final InputStream inputStream) throws IOException, JSchException;
+    boolean upload(final String targetPath, final InputStream uploadFileStream) throws IOException, JSchException;
 
     /**
      * If you pass the path to the file you want to remove as an argument, it will try to remove the file and return whether the removal succeeded or failed.

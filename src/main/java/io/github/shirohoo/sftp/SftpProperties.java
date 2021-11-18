@@ -1,4 +1,4 @@
-package io.module.sftp.properties;
+package io.github.shirohoo.sftp;
 
 import java.util.Objects;
 
