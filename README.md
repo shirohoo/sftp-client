@@ -80,7 +80,7 @@ public interface SftpClient {
 
 ---
 
-- [2.3](https://github.com/shirohoo/sftp-client/releases/tag/2.3)
+- [2.4](https://github.com/shirohoo/sftp-client/releases/tag/2.4)
 
 <br />
 
@@ -95,7 +95,7 @@ public interface SftpClient {
 <dependency>
   <groupId>io.github.shirohoo</groupId>
   <artifactId>sftp-client</artifactId>
-  <version>2.3</version>
+  <version>2.4</version>
 </dependency>
 ```
 
@@ -108,7 +108,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.github.shirohoo:sftp-client:2.3'
+    implementation 'io.github.shirohoo:sftp-client:2.4'
 }
 ```
 
