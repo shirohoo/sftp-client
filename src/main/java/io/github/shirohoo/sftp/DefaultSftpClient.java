@@ -21,7 +21,6 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.Vector;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -130,7 +129,7 @@ public final class DefaultSftpClient implements SftpClient {
             sftp.cd(properties.getRoot());
             log.info("Change directory to {}", properties.getRoot());
             try (InputStream inputStream = sftp.get(targetPath)) {
-                return convertInputStreamToFile(inputStream);
+                return convertInputStreamToFile(inputStream, getFileName(targetPath));
             }
         } catch (Exception e) {
             throw new NotDirectoryException(
@@ -142,11 +141,11 @@ public final class DefaultSftpClient implements SftpClient {
         }
     }
 
-    private File convertInputStreamToFile(final InputStream inputStream) throws IOException {
-        File tempFile = File.createTempFile(UUID.randomUUID().toString(), ".tmp");
-        IOUtils.copy(inputStream, new FileOutputStream(tempFile));
-        tempFile.deleteOnExit();
-        return tempFile;
+    private File convertInputStreamToFile(final InputStream inputStream, final String fileName) throws IOException {
+        File file = new File(fileName);
+        IOUtils.copy(inputStream, new FileOutputStream(file));
+        file.deleteOnExit();
+        return file;
     }
 
     private ChannelSftp getChannelSftp() throws JSchException {
@@ -170,7 +169,7 @@ public final class DefaultSftpClient implements SftpClient {
             for (ChannelSftp.LsEntry entry : list) {
                 if (isFile(entry)) {
                     String filePath = targetDirPath + "/" + entry.getFilename();
-                    files.add(convertInputStreamToFile(sftp.get(filePath)));
+                    files.add(convertInputStreamToFile(sftp.get(filePath), getFileName(filePath)));
                 }
             }
             return files;
@@ -361,6 +360,11 @@ public final class DefaultSftpClient implements SftpClient {
             disconnect(sftp);
             log.info("Disconnected sftp connection.");
         }
+    }
+
+    private String getFileName(final String filePath) {
+        int index = filePath.lastIndexOf("/");
+        return filePath.substring(index + 1);
     }
 
 }
