@@ -1,4 +1,4 @@
-package io.module.sftp;
+package io.github.shirohoo.sftp;
 
 import static java.util.Arrays.stream;
 import static java.util.Objects.isNull;
@@ -10,7 +10,6 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
-import io.module.sftp.properties.SftpProperties;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -20,10 +19,10 @@ import java.io.OutputStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Vector;
-import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -114,6 +113,13 @@ public final class DefaultSftpClient implements SftpClient {
         return (ChannelSftp) channel;
     }
 
+    /**
+     * Pass the path of the file you want to read as an argument. The starting path is the root of SftpProperties. For example, if root is ~/ and the path passed as an argument is user/temp/someFile.txt , SftpClient reads ~/user/temp/someFile.txt and
+     * returns it as a File object. At this time, the transferred file is not saved on the client hard disk, but only in client memory.
+     *
+     * @param targetPath String
+     * @return File
+     */
     @Override
     public File read(final String targetPath) throws JSchException, NotDirectoryException {
         return readFile(targetPath, getChannelSftp());
@@ -147,22 +153,30 @@ public final class DefaultSftpClient implements SftpClient {
         return properties.getKeyMode() ? connectByPrivateKey() : connectByPassword();
     }
 
+    /**
+     * Pass the path of the file you want to read as an argument. The starting path is the root of SftpProperties. For example, if root is ~/ and the path passed as an argument is user/temp/someDir (last args is directory name) , SftpClient reads
+     * ~/user/temp/someDir and returns it as a List {@literal <}File{@literal >} object.
+     *
+     * @param targetDirPath String
+     * @return List {@literal <}File{@literal >}
+     */
     @Override
     @SuppressWarnings("unchecked")
-    public List<File> listFiles(final String dirPath) throws JSchException, NoSuchFileException {
+    public List<File> listFiles(final String targetDirPath) throws JSchException, NoSuchFileException {
         final ChannelSftp sftp = getChannelSftp();
+        List<File> files = new ArrayList<>();
         try {
-            sftp.cd(properties.getRoot());
-            log.info("Change directory to {}", properties.getRoot());
-            return ((Vector<LsEntry>) sftp.ls(dirPath))
-                .stream()
-                .filter(DefaultSftpClient::isFile)
-                .map(LsEntry::getFilename)
-                .map(File::new)
-                .collect(Collectors.toList());
+            Vector<ChannelSftp.LsEntry> list = sftp.ls(targetDirPath);
+            for (ChannelSftp.LsEntry entry : list) {
+                if (isFile(entry)) {
+                    String filePath = targetDirPath + "/" + entry.getFilename();
+                    files.add(convertInputStreamToFile(sftp.get(filePath)));
+                }
+            }
+            return files;
         } catch (Exception e) {
-            log.error("Download file list failure. target path: {}", dirPath);
-            throw new NoSuchFileException(dirPath);
+            log.error("Download file list failure. target path: {}", targetDirPath);
+            throw new NoSuchFileException(targetDirPath);
         } finally {
             disconnect(sftp);
             log.info("Disconnected sftp connection.");
@@ -173,24 +187,38 @@ public final class DefaultSftpClient implements SftpClient {
         return !lsEntry.getAttrs().isDir();
     }
 
+    /**
+     * The location where you want to upload the file is passed as the first argument, and the file you want to upload as the second argument. In this case, the first argument must also include the name of the file.
+     *
+     * @param targetPath String
+     * @param uploadFile File
+     * @return boolean
+     */
     @Override
-    public boolean upload(final String targetPath, final File file) throws JSchException {
+    public boolean upload(final String targetPath, final File uploadFile) throws JSchException {
         try {
-            return upload(targetPath, new FileInputStream(file));
+            return upload(targetPath, new FileInputStream(uploadFile));
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return false;
         }
     }
 
+    /**
+     * The location where you want to upload the file is passed as the first argument, and the InputStream of file you want to upload as the second argument. In this case, the first argument must also include the name of the file.
+     *
+     * @param targetPath       String
+     * @param uploadFileStream InputStream
+     * @return boolean
+     */
     @Override
-    public boolean upload(final String targetPath, final InputStream inputStream) throws IOException, JSchException {
+    public boolean upload(final String targetPath, final InputStream uploadFileStream) throws IOException, JSchException {
         final ChannelSftp sftp = getChannelSftp();
         try {
             sftp.cd(properties.getRoot());
             log.info("Change path to {}", properties.getRoot());
 
-            sftp.put(inputStream, getFileName(targetPath, sftp, targetPath.lastIndexOf("/")));
+            sftp.put(uploadFileStream, getFileName(targetPath, sftp, targetPath.lastIndexOf("/")));
             return true;
         } catch (SftpException e) {
             log.error("Found not root directory. path: {}", e.getMessage());
@@ -199,7 +227,7 @@ public final class DefaultSftpClient implements SftpClient {
             log.error("Upload file failure. path: {}", targetPath);
             return false;
         } finally {
-            inputStream.close();
+            uploadFileStream.close();
             log.info("Closed input stream.");
             disconnect(sftp);
             log.info("Disconnected sftp connection.");
@@ -248,6 +276,12 @@ public final class DefaultSftpClient implements SftpClient {
         }
     }
 
+    /**
+     * If you pass the path to the file you want to remove as an argument, it will try to remove the file and return whether the removal succeeded or failed.
+     *
+     * @param targetPath String
+     * @return boolean
+     */
     @Override
     public boolean remove(final String targetPath) throws JSchException {
         final ChannelSftp sftp = getChannelSftp();
@@ -264,6 +298,14 @@ public final class DefaultSftpClient implements SftpClient {
         }
     }
 
+    /**
+     * Pass the path to the file you want to download from the remote server as the first argument. In this case, the all argument must include a file name. Enter the location where you want to save the downloaded file as the second argument. Returns
+     * true if the download is successful, false if it fails
+     *
+     * @param targetPath   String
+     * @param downloadPath Path
+     * @return boolean
+     */
     @Override
     public boolean download(final String targetPath, final Path downloadPath) throws JSchException {
         final String path = downloadPath.toString();

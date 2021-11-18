@@ -6,8 +6,8 @@ plugins {
 
 group = 'io.github.shirohoo'
 archivesBaseName = 'sftp-client'
-version = '2.2'
-sourceCompatibility = JavaVersion.VERSION_1_8
+version = '2.3'
+sourceCompatibility = '1.8'
 
 gradle.projectsEvaluated {
     tasks.withType(JavaCompile) {
@@ -103,7 +103,7 @@ uploadArchives {
                 developers {
                     developer {
                         id 'shirohoo'
-                        name 'Changhun Han'
+                        name 'Changhun -an'
                         email 'shirohoo4102@gmail.com'
                     }
                 }
