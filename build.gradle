@@ -6,7 +6,7 @@ plugins {
 
 group = 'io.github.shirohoo'
 archivesBaseName = 'sftp-client'
-version = '2.3'
+version = '2.4'
 sourceCompatibility = '1.8'
 
 gradle.projectsEvaluated {
