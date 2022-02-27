@@ -215,9 +215,9 @@ Assume that `SftpProperties.root` is `~`.
 
 ```java
 public File read(){
-    String wantReadFilePath=Paths.get("someDir","someFile.txt").toString();
+    String wantReadFilePath = Paths.get("someDir","someFile.txt").toString();
     return sftpClient.read(wantReadFilePath);
-    }
+}
 ```
 
 <br />
@@ -230,9 +230,9 @@ Assume that `SftpProperties.root` is `~`.
 
 ```java
 public List<File> listFiles(){
-    String wantReadDirPath=Paths.get("someDir1","someDir2").toString();
+    String wantReadDirPath = Paths.get("someDir1","someDir2").toString();
     return sftpClient.listFiles(wantReadDirPath);
-    }
+}
 ```
 
 <br />
@@ -247,16 +247,16 @@ Assume that `SftpProperties.root` is `~`.
 
 ```java
 public boolean upload(){
-    String wantUploadFilePath=Paths.get("someDir","someFile.txt").toString();
-    File uploadFile=new File("someFile");
+    String wantUploadFilePath = Paths.get("someDir","someFile.txt").toString();
+    File uploadFile = new File("someFile");
     return sftpClient.upload(wantUploadFilePath,uploadFile);
-    }
+}
 
 public boolean upload(){
-    String wantUploadFilePath=Paths.get("someDir","someFile.txt").toString();
-    FileInputStream uploadFileInputStream=new FileInputStream(new File("someFile"));
+    String wantUploadFilePath = Paths.get("someDir","someFile.txt").toString();
+    FileInputStream uploadFileInputStream = new FileInputStream(new File("someFile"));
     return sftpClient.upload(wantUploadFilePath,uploadFileInputStream);
-    }
+}
 ```
 
 <br />
@@ -269,9 +269,9 @@ Assume that `SftpProperties.root` is `~`.
 
 ```java
 public boolean remove(){
-    String wantRemoveFilePath=Paths.get("someDir","someFile.txt").toString();
+    String wantRemoveFilePath = Paths.get("someDir","someFile.txt").toString();
     return sftpClient.remove(wantRemoveFilePath);
-    }
+}
 ```
 
 <br />
@@ -288,10 +288,10 @@ Also assume that `SftpProperties.root` is `~`.
 
 ```java
 public boolean download(){
-    String targetFilePath=Paths.get("someDir","someFile.txt").toString();
-    String downloadLocalPath=Paths.get(System.getProperty("user.home"),"download","someFile.txt").toString();
+    String targetFilePath = Paths.get("someDir","someFile.txt").toString();
+    String downloadLocalPath = Paths.get(System.getProperty("user.home"),"download","someFile.txt").toString();
     return sftpClient.downlad(Paths.get(targetFilePath,downloadLocalPath));
-    }
+}
 ```
 
 <br />
